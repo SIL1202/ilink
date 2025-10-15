@@ -2,8 +2,8 @@
 2. 在專案根目錄執行：
 
   ```bash
-  npm install
-  cp .env.example .env
+npm install
+cp .env.example .env
   ```
 3. 啟動開發伺服器：
 
