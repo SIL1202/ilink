@@ -1,0 +1,541 @@
+<!doctype html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="utf-8" />
+    <title>Leaflet 版｜花蓮無障礙到達路線</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <style>
+      html,
+      body,
+      #map {
+        height: 100%;
+        margin: 0;
+      }
+
+      /* 側邊欄樣式 */
+      .sidebar {
+        position: absolute;
+        top: 0;
+        left: 0;
+        bottom: 0;
+        width: 320px;
+        background: #fff;
+        box-shadow: 2px 0 8px rgba(0, 0, 0, 0.15);
+        z-index: 1000;
+        overflow-y: auto;
+        padding: 20px;
+        transform: translateX(0);
+        transition: transform 0.3s ease;
+      }
+
+      .sidebar.collapsed {
+        transform: translateX(-100%);
+      }
+
+      .toggle-sidebar {
+        position: absolute;
+        top: 10px;
+        left: 330px;
+        z-index: 1001;
+        background: #fff;
+        border: none;
+        border-radius: 4px;
+        padding: 8px 12px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        cursor: pointer;
+      }
+
+      .section {
+        margin-bottom: 20px;
+        padding-bottom: 15px;
+        border-bottom: 1px solid #eee;
+      }
+
+      .section-title {
+        font-weight: bold;
+        margin-bottom: 10px;
+        color: #333;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .input-group {
+        margin-bottom: 12px;
+      }
+
+      label {
+        display: block;
+        margin-bottom: 4px;
+        font-size: 14px;
+        color: #666;
+      }
+
+      input[type="number"],
+      input[type="text"] {
+        width: 100%;
+        padding: 8px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        font-size: 14px;
+      }
+
+      .slider-container {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .slider-value {
+        min-width: 40px;
+        text-align: center;
+        font-weight: bold;
+        color: #007aff;
+      }
+
+      input[type="range"] {
+        flex: 1;
+      }
+
+      .btn-primary {
+        width: 100%;
+        padding: 12px;
+        background: #007aff;
+        color: white;
+        border: none;
+        border-radius: 6px;
+        font-size: 16px;
+        cursor: pointer;
+        margin-top: 10px;
+      }
+
+      .btn-primary:hover {
+        background: #0056cc;
+      }
+
+      .route-info {
+        background: #f8f9fa;
+        padding: 15px;
+        border-radius: 6px;
+        margin-top: 15px;
+        font-size: 14px;
+      }
+
+      .accessibility-badge {
+        display: inline-block;
+        padding: 4px 8px;
+        border-radius: 12px;
+        font-size: 12px;
+        font-weight: bold;
+        margin-left: 8px;
+      }
+
+      .badge-high {
+        background: #d4edda;
+        color: #155724;
+      }
+      .badge-medium {
+        background: #d1ecf1;
+        color: #0c5460;
+      }
+      .badge-basic {
+        background: #fff3cd;
+        color: #856404;
+      }
+
+      .preset-buttons {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+        margin-top: 10px;
+      }
+
+      .btn-preset {
+        padding: 8px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        background: #f8f9fa;
+        cursor: pointer;
+        font-size: 12px;
+      }
+
+      .btn-preset:hover {
+        background: #e9ecef;
+      }
+
+      .btn-preset.active {
+        background: #007aff;
+        color: white;
+        border-color: #007aff;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="map"></div>
+
+    <!-- 側邊欄 -->
+    <div class="sidebar" id="sidebar">
+      <div class="section">
+        <div class="section-title">
+          🗺️ 無障礙路線規劃
+          <span class="accessibility-badge badge-high" id="accessibilityBadge"
+            >高</span
+          >
+        </div>
+        <p style="font-size: 12px; color: #666; margin-bottom: 15px">
+          為輪椅使用者規劃最適合的路線
+        </p>
+      </div>
+
+      <div class="section">
+        <div class="section-title">📍 起點與終點</div>
+        <div class="input-group">
+          <label>起點座標</label>
+          <input
+            type="text"
+            id="start"
+            value="121.606,23.975"
+            placeholder="經度,緯度"
+          />
+        </div>
+        <div class="input-group">
+          <label>終點座標</label>
+          <input
+            type="text"
+            id="end"
+            value="121.611,23.979"
+            placeholder="經度,緯度"
+          />
+        </div>
+        <div style="font-size: 12px; color: #666; text-align: center">
+          點擊地圖設定位置（交替設定起點/終點）
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-title">⚙️ 無障礙設定</div>
+
+        <div class="input-group">
+          <label>最大坡度 <span id="inclineValue">8%</span></label>
+          <div class="slider-container">
+            <input
+              type="range"
+              id="incline"
+              min="0.02"
+              max="0.15"
+              step="0.01"
+              value="0.08"
+            />
+            <span class="slider-value" id="inclineDisplay">8%</span>
+          </div>
+          <div style="font-size: 12px; color: #666">
+            <span style="color: #28a745">平緩 (2-5%)</span> |
+            <span style="color: #ffc107">中等 (5-10%)</span> |
+            <span style="color: #dc3545">陡峭 (>10%)</span>
+          </div>
+        </div>
+
+        <div class="input-group">
+          <label>最小寬度 <span id="widthValue">90cm</span></label>
+          <div class="slider-container">
+            <input
+              type="range"
+              id="width"
+              min="0.6"
+              max="1.5"
+              step="0.1"
+              value="0.9"
+            />
+            <span class="slider-value" id="widthDisplay">90cm</span>
+          </div>
+          <div style="font-size: 12px; color: #666">
+            <span style="color: #dc3545">狹窄 (<80cm)</span> |
+            <span style="color: #ffc107">標準 (80-120cm)</span> |
+            <span style="color: #28a745">寬敞 (>120cm)</span>
+          </div>
+        </div>
+
+        <div class="preset-buttons">
+          <button
+            class="btn-preset active"
+            data-incline="0.05"
+            data-width="1.2"
+          >
+            高無障礙
+          </button>
+          <button class="btn-preset" data-incline="0.08" data-width="0.9">
+            標準
+          </button>
+          <button class="btn-preset" data-incline="0.12" data-width="0.7">
+            基本
+          </button>
+        </div>
+
+        <!-- 新增真實路線按鈕 -->
+        <button
+          class="btn-primary"
+          id="realRouteBtn"
+          style="background: #28a745; margin-top: 10px"
+        >
+          🛣️ 真實道路路線
+        </button>
+        <button class="btn-primary" id="routeBtn">🚀 一般路線規劃</button>
+        <div class="preset-buttons">
+          <button
+            class="btn-preset active"
+            data-incline="0.05"
+            data-width="1.2"
+          >
+            高無障礙
+          </button>
+          <button class="btn-preset" data-incline="0.08" data-width="0.9">
+            標準
+          </button>
+          <button class="btn-preset" data-incline="0.12" data-width="0.7">
+            基本
+          </button>
+          <button class="btn-preset" data-incline="0.15" data-width="0.6">
+            僅避開階梯
+          </button>
+        </div>
+      </div>
+
+      <button class="btn-primary" id="routeBtn">🚀 開始規劃路線</button>
+
+      <div class="route-info" id="routeInfo" style="display: none">
+        <div style="font-weight: bold; margin-bottom: 8px">路線資訊</div>
+        <div id="routeDetails">載入中...</div>
+      </div>
+    </div>
+
+    <button class="toggle-sidebar" id="toggleSidebar">☰</button>
+
+    <script>
+      // 地圖初始化
+      const map = L.map("map").setView([23.975, 121.606], 14);
+      L.tileLayer(
+        "https://wmts.nlsc.gov.tw/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0" +
+          "&LAYER=EMAP&STYLE=default&TILEMATRIXSET=EPSG:3857" +
+          "&TILEMATRIX=EPSG:3857:{z}&TILEROW={y}&TILECOL={x}&FORMAT=image/png",
+        { attribution: "© 國土測繪中心", maxZoom: 19, crossOrigin: true },
+      ).addTo(map);
+
+      // 側邊欄控制
+      const sidebar = document.getElementById("sidebar");
+      const toggleBtn = document.getElementById("toggleSidebar");
+
+      toggleBtn.addEventListener("click", () => {
+        sidebar.classList.toggle("collapsed");
+        toggleBtn.textContent = sidebar.classList.contains("collapsed")
+          ? "☰"
+          : "✕";
+      });
+
+      // 滑桿即時更新
+      const inclineSlider = document.getElementById("incline");
+      const inclineDisplay = document.getElementById("inclineDisplay");
+      const inclineValue = document.getElementById("inclineValue");
+
+      const widthSlider = document.getElementById("width");
+      const widthDisplay = document.getElementById("widthDisplay");
+      const widthValue = document.getElementById("widthValue");
+
+      function updateSliders() {
+        const incline = parseFloat(inclineSlider.value);
+        const width = parseFloat(widthSlider.value);
+
+        inclineDisplay.textContent = Math.round(incline * 100) + "%";
+        inclineValue.textContent = Math.round(incline * 100) + "%";
+
+        widthDisplay.textContent = Math.round(width * 100) + "cm";
+        widthValue.textContent = Math.round(width * 100) + "cm";
+
+        // 更新無障礙等級標籤
+        updateAccessibilityBadge(incline, width);
+      }
+
+      inclineSlider.addEventListener("input", updateSliders);
+      widthSlider.addEventListener("input", updateSliders);
+
+      // 預設按鈕
+      const presetButtons = document.querySelectorAll(".btn-preset");
+      presetButtons.forEach((btn) => {
+        btn.addEventListener("click", function () {
+          presetButtons.forEach((b) => b.classList.remove("active"));
+          this.classList.add("active");
+
+          const incline = parseFloat(this.dataset.incline);
+          const width = parseFloat(this.dataset.width);
+
+          inclineSlider.value = incline;
+          widthSlider.value = width;
+          updateSliders();
+        });
+      });
+
+      // 更新無障礙等級標籤
+      function updateAccessibilityBadge(incline, width) {
+        const badge = document.getElementById("accessibilityBadge");
+        let level = "basic";
+        let text = "基本";
+        let className = "badge-basic";
+
+        if (incline <= 0.05 && width >= 1.2) {
+          level = "high";
+          text = "高";
+          className = "badge-high";
+        } else if (incline <= 0.08 && width >= 0.9) {
+          level = "medium";
+          text = "中";
+          className = "badge-medium";
+        }
+
+        badge.textContent = text;
+        badge.className = `accessibility-badge ${className}`;
+      }
+
+      // 地圖點擊設定座標
+      let pick = "start";
+      const markers = { start: null, end: null };
+
+      map.on("click", (e) => {
+        const lng = e.latlng.lng.toFixed(6),
+          lat = e.latlng.lat.toFixed(6);
+        document.getElementById(pick).value = `${lng},${lat}`;
+
+        if (markers[pick]) map.removeLayer(markers[pick]);
+        markers[pick] = L.marker([lat, lng], {
+          draggable: true,
+          icon: L.divIcon({
+            className: `marker-${pick}`,
+            html: pick === "start" ? "🟢" : "🔴",
+            iconSize: [20, 20],
+          }),
+        })
+          .on("dragend", (ev) => {
+            const p = ev.target.getLatLng();
+            document.getElementById(pick).value =
+              `${p.lng.toFixed(6)},${p.lat.toFixed(6)}`;
+          })
+          .addTo(map);
+
+        pick = pick === "start" ? "end" : "start";
+      });
+
+      // 路線規劃
+      let routeLayer = null;
+
+      async function drawRoute() {
+        const routeInfo = document.getElementById("routeInfo");
+        const routeDetails = document.getElementById("routeDetails");
+
+        routeInfo.style.display = "block";
+        routeDetails.innerHTML =
+          '<div style="text-align: center;">規劃中...</div>';
+
+        const [slon, slat] = document
+          .getElementById("start")
+          .value.split(",")
+          .map(Number);
+        const [elon, elat] = document
+          .getElementById("end")
+          .value.split(",")
+          .map(Number);
+        const maximum_incline = parseFloat(
+          document.getElementById("incline").value,
+        );
+        const minimum_width = parseFloat(
+          document.getElementById("width").value,
+        );
+
+        try {
+          const r = await fetch("/api/route", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              start: [slon, slat],
+              end: [elon, elat],
+              params: { maximum_incline, minimum_width },
+            }),
+          });
+          const geo = await r.json();
+          if (!r.ok) throw new Error(geo?.error || "routing_failed");
+
+          // 清除舊路線
+          if (routeLayer) map.removeLayer(routeLayer);
+
+          // 根據無障礙等級設定樣式
+          const accessibilityLevel =
+            geo.features[0]?.properties?.summary?.accessibility?.level ||
+            "basic";
+          const routeStyle = getRouteStyle(accessibilityLevel);
+
+          routeLayer = L.geoJSON(geo, {
+            style: routeStyle,
+            onEachFeature: function (feature, layer) {
+              const props = feature.properties;
+              if (props.summary) {
+                const popupContent = `
+                                <div style="min-width: 200px;">
+                                    <strong>無障礙路線</strong><br>
+                                    距離: ${props.summary.distance.toFixed(0)} 公尺<br>
+                                    預估時間: ${Math.round(props.summary.duration / 60)} 分鐘<br>
+                                    無障礙等級: <span style="color: ${getLevelColor(props.summary.accessibility.level)}">${props.summary.accessibility.level}</span><br>
+                                    <small>${props.summary.accessibility.notes}</small>
+                                </div>
+                            `;
+                layer.bindPopup(popupContent);
+              }
+            },
+          }).addTo(map);
+
+          // 自動縮放
+          map.fitBounds(routeLayer.getBounds(), { padding: [50, 50] });
+
+          // 顯示詳細資訊
+          const summary = geo.features[0].properties.summary;
+          routeDetails.innerHTML = `
+                    <div style="line-height: 1.6;">
+                        <div>📏 距離: <strong>${summary.distance.toFixed(0)} 公尺</strong></div>
+                        <div>⏱️ 時間: <strong>${Math.round(summary.duration / 60)} 分鐘</strong></div>
+                        <div>♿ 無障礙等級: <span style="color: ${getLevelColor(summary.accessibility.level)}; font-weight: bold;">${summary.accessibility.level}</span></div>
+                        <div>💡 ${summary.accessibility.notes}</div>
+                    </div>
+                `;
+        } catch (e) {
+          console.error(e);
+          routeDetails.innerHTML = `<div style="color: #dc3545;">❌ 路線規劃失敗：${e.message}</div>`;
+        }
+      }
+
+      function getRouteStyle(level) {
+        const styles = {
+          high: { color: "#28a745", weight: 8, opacity: 0.8 },
+          medium: { color: "#17a2b8", weight: 6, opacity: 0.8 },
+          basic: { color: "#ffc107", weight: 5, opacity: 0.7 },
+        };
+        return styles[level] || styles.basic;
+      }
+
+      function getLevelColor(level) {
+        const colors = {
+          high: "#28a745",
+          medium: "#17a2b8",
+          basic: "#ffc107",
+        };
+        return colors[level] || "#666";
+      }
+
+      // 綁定按鈕事件
+      document.getElementById("routeBtn").onclick = drawRoute;
+
+      // 初始化
+      updateSliders();
+    </script>
+  </body>
+</html>
