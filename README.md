@@ -3,6 +3,7 @@
 
   ```bash
   npm install
+  cp .env.example .env
   ```
 3. 啟動開發伺服器：
 
