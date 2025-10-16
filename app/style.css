@@ -1,0 +1,273 @@
+html,
+body,
+#map {
+  height: 100%;
+  margin: 0;
+  font-family:
+    -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+/* 側邊欄樣式 */
+.sidebar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: 320px;
+  background: #fff;
+  box-shadow: 2px 0 8px rgba(0, 0, 0, 0.15);
+  z-index: 1000;
+  overflow-y: auto;
+  padding: 20px;
+  transform: translateX(0);
+  transition: transform 0.3s ease;
+}
+
+.sidebar.collapsed {
+  transform: translateX(-100%);
+}
+
+.toggle-sidebar {
+  position: absolute;
+  top: 10px;
+  left: 330px;
+  z-index: 1001;
+  background: #fff;
+  border: none;
+  border-radius: 4px;
+  padding: 8px 12px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  cursor: pointer;
+  font-size: 16px;
+}
+
+.toggle-sidebar:hover {
+  background: #f8f9fa;
+}
+
+.section {
+  margin-bottom: 20px;
+  padding-bottom: 15px;
+  border-bottom: 1px solid #eee;
+}
+
+.section-title {
+  font-weight: bold;
+  margin-bottom: 10px;
+  color: #333;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 16px;
+}
+
+.description,
+.instruction {
+  font-size: 12px;
+  color: #666;
+  margin-bottom: 15px;
+  text-align: center;
+}
+
+.input-group {
+  margin-bottom: 16px;
+}
+
+label {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 14px;
+  color: #333;
+  font-weight: 500;
+}
+
+input[type="number"],
+input[type="text"] {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 14px;
+  box-sizing: border-box;
+}
+
+input[type="number"]:focus,
+input[type="text"]:focus {
+  outline: none;
+  border-color: #007aff;
+  box-shadow: 0 0 0 2px rgba(0, 122, 255, 0.1);
+}
+
+.slider-container {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.slider-value {
+  min-width: 50px;
+  text-align: center;
+  font-weight: bold;
+  color: #007aff;
+  font-size: 14px;
+}
+
+input[type="range"] {
+  flex: 1;
+  height: 4px;
+  border-radius: 2px;
+  background: #ddd;
+  outline: none;
+}
+
+input[type="range"]::-webkit-slider-thumb {
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #007aff;
+  cursor: pointer;
+}
+
+.slider-labels {
+  font-size: 12px;
+  color: #666;
+  text-align: center;
+}
+
+.label-green {
+  color: #28a745;
+}
+.label-yellow {
+  color: #ffc107;
+}
+.label-red {
+  color: #dc3545;
+}
+
+.btn-primary {
+  width: 100%;
+  padding: 12px;
+  background: #007aff;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  cursor: pointer;
+  margin-top: 8px;
+  transition: background 0.2s;
+}
+
+.btn-primary:hover {
+  background: #0056cc;
+}
+
+.btn-secondary {
+  width: 100%;
+  padding: 10px;
+  background: #6c757d;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  cursor: pointer;
+  margin-top: 8px;
+  transition: background 0.2s;
+}
+
+.btn-secondary:hover {
+  background: #545b62;
+}
+
+.preset-buttons {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 8px;
+  margin-top: 15px;
+}
+
+.btn-preset {
+  padding: 10px 8px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  background: #f8f9fa;
+  cursor: pointer;
+  font-size: 12px;
+  transition: all 0.2s;
+}
+
+.btn-preset:hover {
+  background: #e9ecef;
+}
+
+.btn-preset.active {
+  background: #007aff;
+  color: white;
+  border-color: #007aff;
+}
+
+.route-info {
+  background: #f8f9fa;
+  padding: 16px;
+  border-radius: 8px;
+  margin-top: 20px;
+  font-size: 14px;
+  border-left: 4px solid #007aff;
+}
+
+.route-title {
+  font-weight: bold;
+  margin-bottom: 10px;
+  color: #333;
+  font-size: 15px;
+}
+
+.accessibility-badge {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: bold;
+}
+
+.badge-high {
+  background: #d4edda;
+  color: #155724;
+}
+.badge-medium {
+  background: #d1ecf1;
+  color: #0c5460;
+}
+.badge-basic {
+  background: #fff3cd;
+  color: #856404;
+}
+
+/* 標記樣式 */
+.marker-start,
+.marker-end {
+  background: none !important;
+  border: none !important;
+}
+
+.leaflet-popup-content {
+  font-family:
+    -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+/* 響應式設計 */
+@media (max-width: 768px) {
+  .sidebar {
+    width: 280px;
+    padding: 15px;
+  }
+
+  .toggle-sidebar {
+    left: 290px;
+  }
+
+  .preset-buttons {
+    grid-template-columns: 1fr 1fr;
+  }
+}
