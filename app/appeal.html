@@ -17,25 +17,7 @@
         <a href="form.html"><button>前往表單</button></a>
     </div>
 
-    <!-- 主畫面 -->
-    <div id="home" class="page active">
-        <button onclick="showPage('second')">前往表單</button>
-    </div>
-
-    <!-- 第二畫面 -->
-    <div id="second" class="page">
-        <iframe src="https://docs.google.com/forms/d/e/1FAIpQLSc-orRHxyBI0GtQY5aeM8sq89CWm155pdUFRMBrEgoE3c3sKw/viewform?embedded=true" width="640" height="486" frameborder="0" marginheight="0" marginwidth="0">Loading…</iframe>
-        <button onclick="showPage('home')">返回上一頁</button>
-    </div>
-
-    <script>
-        function showPage(page) {
-            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-            document.getElementById(page).classList.add('active');
-        }
-    </script>
-
-
+    <!-- 中間標題 -->
     <h1 class="title"> or </h1>
     <h1 class="title"> 各政府申訴平台 </h1>
     <style>.title {
