@@ -2,7 +2,7 @@
 
 ### 1. 企劃書
 
-[沒我不行輪椅通行](/Users/sil/Projects/ilink/沒我不行輪椅通行-Wheelway.pdf)
+[沒我不行輪椅通行](./沒我不行輪椅通行-Wheelway.pdf)
 
 ### 2. 使用說明
 
