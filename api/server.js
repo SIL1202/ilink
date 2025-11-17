@@ -1,18 +1,18 @@
 import express from "express";
+import cors from "cors";
+import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
-import dotenv from "dotenv";
-
-// 導入路由處理器
-import { calculateHybridRoute } from "./routes/hybrid-route.js";
+import { calculateRoute } from "./routes/route.js";
 import { validLonLatPair } from "./utils/geo.js";
-
-dotenv.config();
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
+const PORT = 3000;
+
+app.use(cors());
 app.use(express.json({ limit: "1mb" }));
 app.use(express.static(path.join(__dirname, "..", "app")));
 
@@ -20,57 +20,49 @@ app.use(express.static(path.join(__dirname, "..", "app")));
 app.get("/health", (req, res) => {
   res.json({
     ok: true,
-    service: "花蓮無障礙路線規劃",
+    service: "花蓮無障礙坡道路線規劃",
     version: "1.0.0",
-    available_routes: ["/api/route", "/api/real-route", "/api/hybrid-route"],
   });
 });
 
-// 混合路線（推薦）
-app.post("/api/hybrid-route", async (req, res) => {
+// 坡道資料 API
+app.get("/api/ramps", (req, res) => {
+  const filePath = path.join(process.cwd(), "data", "ramps.json");
   try {
-    const { start, end, params = {} } = req.body;
-
-    if (!validLonLatPair(start) || !validLonLatPair(end)) {
-      return res.status(400).json({ error: "bad_coords" });
-    }
-
-    const result = await calculateHybridRoute(start, end, {
-      maximum_incline: params.maximum_incline ?? 0.08,
-      minimum_width: params.minimum_width ?? 0.9,
-    });
-
-    res.json(result);
+    const json = fs.readFileSync(filePath, "utf-8");
+    const ramps = JSON.parse(json);
+    res.json(ramps);
   } catch (err) {
-    console.error("Hybrid routing error:", err);
-    res
-      .status(500)
-      .json({ error: "hybrid_routing_failed", message: err.message });
+    console.error("讀取 ramps.json 失敗:", err);
+    res.status(500).json({ error: "無法讀取坡道資料" });
   }
 });
 
-// 無障礙設施
-app.get("/api/accessible-facilities", (req, res) => {
-  res.json({
-    ramps: [
-      {
-        coordinates: [121.605, 23.976],
-        type: "ramp",
-        description: "無障礙斜坡",
-      },
-    ],
-    elevators: [
-      {
-        coordinates: [121.607, 23.978],
-        type: "elevator",
-        description: "公共電梯",
-      },
-    ],
-  });
+// 路線規劃 API - 新增這個端點！
+app.post("/api/route", async (req, res) => {
+  try {
+    const { start, end } = req.body;
+    console.log("📍 收到路線規劃請求:", { start, end });
+
+    if (!validLonLatPair(start) || !validLonLatPair(end)) {
+      return res.status(400).json({
+        error: "bad_coords",
+        hint: "請提供有效的 [經度,緯度] 座標",
+      });
+    }
+
+    const result = await calculateRoute(start, end);
+    console.log("✅ 路線規劃成功，回傳雙路線格式");
+    res.json(result);
+  } catch (err) {
+    console.error("路線規劃錯誤:", err);
+    res.status(500).json({
+      error: "routing_failed",
+      message: "路線規劃服務暫時無法使用",
+    });
+  }
 });
 
-const port = process.env.PORT || 3000;
-app.listen(port, () => {
-  console.log(`🚀 伺服器啟動: http://localhost:${port}`);
-  console.log(`🗺️  可用路線: /api/route, /api/real-route, /api/hybrid-route`);
+app.listen(PORT, () => {
+  console.log(`🚀 花蓮路線規劃服務啟動: http://localhost:${PORT}`);
 });
