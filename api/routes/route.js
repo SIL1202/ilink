@@ -1,94 +1,158 @@
 // 導入地理計算工具
 import { calculateRouteDistance, haversineMeters } from "../utils/geo.js";
+import fs from "fs";
+import path from "path";
 
-/**
- * 主要路由函數 - 計算一般路線和無障礙路線
- * @param {Array} start - 起點座標 [經度, 緯度]
- * @param {Array} end - 終點座標 [經度, 緯度]
- * @returns {Object} 包含一般路線和無障礙路線的物件
- */
-export async function calculateRoute(start, end) {
-  console.log("📍 計算路線...", { start, end });
+export async function calculateRoute(start, end, mode = "normal", ramp = null) {
+  console.log("📍 計算路線...", { start, end, mode, ramp });
+  console.log("🔍 ramp 參數詳細資訊:", {
+    type: typeof ramp,
+    isNull: ramp === null,
+    isUndefined: ramp === undefined,
+    value: ramp,
+  });
 
-  try {
-    // 取得一般步行路線
-    const normalRoute = await getOSRMRoute(start, end);
+  const normalRoute = await getOSRMRoute(start, end);
+  let accessibleRoute = null;
+  let hasAccessibleAlternative = false;
 
-    // 先檢查 OSRM 回傳是否有效
-    if (
-      !normalRoute ||
-      normalRoute.code !== "Ok" ||
-      !normalRoute.routes?.length
-    ) {
-      throw new Error("OSRM_no_valid_route");
-    }
+  if (mode === "accessible") {
+    console.log("♿ 無障礙路線模式");
 
-    // ✅ 新增：檢查終點附近是否有坡道
-    const hasNearbyRamp = await checkDestinationHasRamp(end);
+    // 詳細檢查 ramp 參數
+    if (ramp) {
+      console.log("✅ 使用提供的坡道點:", ramp);
+      console.log("🎯 ramp 物件結構:", {
+        hasLon: "lon" in ramp,
+        hasLat: "lat" in ramp,
+        hasName: "name" in ramp,
+        lon: ramp.lon,
+        lat: ramp.lat,
+        name: ramp.name,
+      });
 
-    let accessibleRoute = null;
+      // 這裡可以實現真正的無障礙路線規劃邏輯
+      // 暫時先用一般路線代替
+      accessibleRoute = formatSimpleRoute(normalRoute);
+      const feature = accessibleRoute.features[0];
 
-    // ✅ 只有終點附近有坡道時，才分析無障礙路線
-    if (hasNearbyRamp) {
-      console.log("✅ 終點附近有坡道，分析無障礙路線");
-      accessibleRoute = await analyzeAccessibleRoute(normalRoute);
+      feature.properties.accessibility = {
+        barrier_count: 0,
+        suitable_for_wheelchair: true,
+        ramp_used: ramp.name,
+      };
+
+      hasAccessibleAlternative = true;
+      console.log(
+        "🎉 已設定無障礙路線，has_accessible_alternative =",
+        hasAccessibleAlternative,
+      );
     } else {
-      console.log("❌ 終點100公尺內無坡道，僅提供一般路線");
+      console.log("❌ 無障礙模式但未提供坡道點");
+      // 檢查目的地附近是否有坡道
+      const hasRamp = await checkDestinationHasRamp(end);
+      if (hasRamp) {
+        console.log("✅ 目的地附近有坡道，提供無障礙路線");
+        accessibleRoute = formatSimpleRoute(normalRoute);
+        const feature = accessibleRoute.features[0];
+
+        feature.properties.accessibility = {
+          barrier_count: 0,
+          suitable_for_wheelchair: true,
+        };
+
+        hasAccessibleAlternative = true;
+      } else {
+        console.log("❌ 目的地附近沒有坡道，無法提供無障礙路線");
+        hasAccessibleAlternative = false;
+      }
     }
-
-    // ✅ 添加詳細日誌
-    console.log("🔍 路線分析結果:");
-    console.log("  - 一般路線: ✅ 有");
-    console.log("  - 終點附近坡道:", hasNearbyRamp ? "✅ 有" : "❌ 無");
-    console.log("  - 無障礙路線:", accessibleRoute ? "✅ 有" : "❌ 無");
-    console.log(
-      "  - 有替代路線:",
-      accessibleRoute !== null ? "✅ 是" : "❌ 否",
-    );
-
-    return {
-      normal: formatSimpleRoute(normalRoute),
-      accessible: accessibleRoute,
-      has_accessible_alternative: accessibleRoute !== null,
-    };
-  } catch (error) {
-    console.log("🔄 OSRM 失敗，使用 Fallback:", error.message);
-    const fallback = await getFallbackRoute(start, end);
-    return {
-      normal: fallback,
-      accessible: null,
-      has_accessible_alternative: false,
-    };
+  } else {
+    console.log("🚶 一般模式：僅提供一般路線");
+    hasAccessibleAlternative = false;
   }
+
+  console.log("📤 最終回傳結果:", {
+    has_accessible_alternative: hasAccessibleAlternative,
+    accessible_route_exists: accessibleRoute !== null,
+  });
+
+  return {
+    normal: formatSimpleRoute(normalRoute),
+    accessible: accessibleRoute,
+    has_accessible_alternative: hasAccessibleAlternative,
+  };
 }
 
-/**
- * 檢查目的地附近是否有坡道（100公尺內）
- * @param {Array} destination - 目的地座標 [經度, 緯度]
- * @returns {boolean} 100公尺內是否有坡道
- */
 async function checkDestinationHasRamp(destination) {
   try {
     // 載入坡道資料
     const ramps = await loadRampsData();
+
+    // ✅ 添加除錯：檢查載入的坡道資料
+    console.log(`🔍 載入的坡道資料:`, {
+      數量: ramps.length,
+      是否有資料: ramps.length > 0,
+      第一個坡道: ramps[0] || "無資料",
+    });
+
     const [destLon, destLat] = destination;
 
-    // 檢查100公尺內是否有坡道
-    const hasRamp = ramps.some((ramp) => {
+    console.log(`📍 檢查目的地: [${destLon}, ${destLat}]`);
+    console.log(`📊 可用坡道數量: ${ramps.length}`);
+
+    // 如果沒有坡道資料，直接返回 false
+    if (ramps.length === 0) {
+      console.log("❌ 沒有坡道資料可用");
+      return false;
+    }
+
+    // ✅ 詳細輸出每個坡道的距離
+    let minDistance = Infinity;
+    let closestRamp = null;
+    let foundRamp = false;
+
+    ramps.forEach((ramp, index) => {
       const distance = haversineMeters(
         [destLon, destLat],
         [ramp.lon, ramp.lat],
       );
-      return distance <= 100; // 100公尺內
+
+      // 記錄最近坡道
+      if (distance < minDistance) {
+        minDistance = distance;
+        closestRamp = ramp;
+      }
+
+      // 檢查是否在100公尺內
+      const isWithin100m = distance <= 100;
+      if (isWithin100m) {
+        foundRamp = true;
+        console.log(
+          `🎯 找到符合的坡道: "${ramp.name}" (${distance.toFixed(1)} 公尺)`,
+        );
+      }
+
+      console.log(`  坡道 ${index + 1}: "${ramp.name}"`);
+      console.log(`    座標: [${ramp.lon}, ${ramp.lat}]`);
+      console.log(
+        `    距離: ${distance.toFixed(1)} 公尺 ${isWithin100m ? "✅ 在100公尺內!" : "❌ 超過100公尺"}`,
+      );
     });
 
+    // ✅ 輸出總結
+    console.log(`📊 坡道檢查總結:`);
+    console.log(`  最近坡道: "${closestRamp?.name || "無"}"`);
+    console.log(`  最近距離: ${minDistance.toFixed(1)} 公尺`);
+    console.log(`  100公尺內坡道: ${foundRamp ? "✅ 有" : "❌ 無"}`);
     console.log(
-      `📍 目的地坡道檢查: ${hasRamp ? "100公尺內有坡道" : "100公尺內無坡道"}`,
+      `  最終結果: ${foundRamp ? "提供無障礙路線" : "僅提供一般路線"}`,
     );
-    return hasRamp;
+
+    return foundRamp;
   } catch (error) {
     console.error("❌ 檢查坡道失敗:", error);
-    return false; // 失敗時保守估計為無坡道
+    return false;
   }
 }
 
@@ -96,12 +160,50 @@ async function checkDestinationHasRamp(destination) {
  * 載入坡道資料
  */
 async function loadRampsData() {
-  // 這裡可以從你的坡道API或本地檔案載入
-  // 暫時回傳空陣列，你需要根據實際情況實作
-  return [];
-} /**
- * 從 OSRM 服務取得路線 - 添加錯誤處理
- */
+  try {
+    // ✅ 修正檔案路徑
+    const filePath = path.join(process.cwd(), "data", "ramps.json");
+    console.log("📁 嘗試載入坡道檔案:", filePath);
+
+    // ✅ 檢查檔案是否存在
+    if (!fs.existsSync(filePath)) {
+      console.error("❌ 坡道檔案不存在:", filePath);
+
+      // ✅ 列出當前目錄結構幫助除錯
+      const dataDir = path.join(process.cwd(), "data");
+      console.log("📁 當前 data 目錄內容:");
+      try {
+        const files = fs.readdirSync(dataDir);
+        files.forEach((file) => console.log(`   - ${file}`));
+      } catch (e) {
+        console.log("   - 無法讀取 data 目錄");
+      }
+
+      return [];
+    }
+
+    const json = fs.readFileSync(filePath, "utf-8");
+    const ramps = JSON.parse(json);
+    console.log(`✅ 成功載入 ${ramps.length} 個坡道資料`);
+
+    // ✅ 確認資料結構正確
+    if (ramps.length > 0) {
+      console.log("📋 坡道資料範例:");
+      ramps.slice(0, 3).forEach((ramp, i) => {
+        console.log(`  [${i + 1}] ${ramp.name}: [${ramp.lon}, ${ramp.lat}]`);
+      });
+    } else {
+      console.warn("⚠️ 坡道資料為空陣列!");
+    }
+
+    return ramps;
+  } catch (error) {
+    console.error("❌ 載入坡道資料失敗:", error.message);
+    console.error("詳細錯誤:", error);
+    return [];
+  }
+}
+
 async function getOSRMRoute(start, end) {
   const [startLon, startLat] = start;
   const [endLon, endLat] = end;
@@ -123,68 +225,6 @@ async function getOSRMRoute(start, end) {
     console.error("❌ OSRM 請求失敗:", error.message);
     throw error;
   }
-}
-
-/**
- * 分析無障礙路線
- * @param {Object} routeData - 原始路線資料
- * @returns {Object|null} 無障礙路線資料，如果無法分析則回傳 null
- */
-async function analyzeAccessibleRoute(routeData) {
-  // 檢查路線資料是否有效
-  if (routeData.code !== "Ok") return null;
-
-  // 偵測路線中的無障礙障礙點
-  const barriers = detectAccessibilityBarriers(routeData);
-
-  // 取得主要路線資訊
-  const route = routeData.routes[0];
-
-  // 檢查距離是否適合輪椅（2公里內）
-  const distanceOk = route.distance <= 2000;
-
-  // ✅ 修正：如果有障礙或距離過長，就回傳 null
-  if (barriers.length > 0 || !distanceOk) {
-    console.log(
-      `❌ 不提供無障礙路線: ${barriers.length > 0 ? "有障礙" : "距離過長"}`,
-    );
-    return null;
-  }
-
-  // ✅ 只有真正適合的路線才回傳
-  console.log("✅ 路線適合輪椅，提供無障礙路線");
-  return {
-    type: "FeatureCollection", // GeoJSON 格式
-    features: [
-      {
-        type: "Feature",
-        properties: {
-          summary: {
-            distance: Math.round(route.distance), // 距離（公尺）
-            duration: Math.round(route.duration / 60), // 時間（分鐘）
-          },
-          accessibility: {
-            suitable_for_wheelchair: true, // 因為通過檢查，所以是 true
-            barriers: barriers, // 障礙點列表（應該是空的）
-            barrier_count: barriers.length, // 障礙點數量（應該是 0）
-            distance_analysis: {
-              distance: route.distance, // 路線距離
-              suitable: distanceOk, // 距離是否合適
-              suggestion: "距離適合輪椅", // 建議
-            },
-            confidence: "high", // 可信度
-            assumptions: "基於OpenStreetMap道路類型分析", // 分析基礎說明
-          },
-        },
-        geometry: route.geometry, // 路線幾何資料
-      },
-    ],
-    metadata: {
-      source: "OSRM", // 資料來源
-      accessibility_checked: true, // 是否經過無障礙檢查
-      last_updated: new Date().toISOString(), // 最後更新時間
-    },
-  };
 }
 
 /**

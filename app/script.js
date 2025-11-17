@@ -140,7 +140,6 @@ function initMapClick() {
   });
 }
 
-// 規劃路線
 async function drawRoute() {
   const routeInfo = document.getElementById("routeInfo");
   const routeDetails = document.getElementById("routeDetails");
@@ -162,7 +161,11 @@ async function drawRoute() {
       throw new Error("無效的座標格式，請使用 經度,緯度 格式");
     }
 
-    // ✅ 修正: 檢查 ramps 是否已載入
+    // ✅ 修正：每次都重新初始化 mode
+    let mode = "normal"; // 預設為一般模式
+    let rampPoint = null;
+
+    // 檢查坡道資料是否已載入
     if (ramps.length === 0) {
       console.warn("⚠️ 坡道資料尚未載入，重新載入...");
       await loadRamps();
@@ -171,11 +174,9 @@ async function drawRoute() {
     // 自動判斷目的地附近是否有人工坡道
     const { ramp, distance } = findNearestRamp(elat, elon);
 
-    let mode = "normal";
-    let rampPoint = null;
-
     console.log(`📍 最近坡道距離: ${distance.toFixed(1)} 公尺`);
 
+    // ✅ 修正：明確設定 mode
     if (ramp && distance < 100) {
       console.log("♿ 終點附近有坡道 → 啟動無障礙路線模式");
       mode = "accessible";
@@ -187,13 +188,15 @@ async function drawRoute() {
       console.log("➡️ 無障礙入口：", rampPoint);
     } else {
       console.log("🚶‍♂️ 終點沒有坡道 → 使用一般導航模式");
+      mode = "normal"; // ✅ 明確設定為一般模式
+      rampPoint = null;
     }
 
     // 呼叫後端
     const body = {
       start: [slon, slat],
       end: [elon, elat],
-      mode: mode,
+      mode: mode, // ✅ 現在 mode 一定是 "normal" 或 "accessible"
       ramp: rampPoint,
     };
 
@@ -385,14 +388,12 @@ function drawRoutesOnMap(routeData) {
   }
 }
 
-// 顯示路線資訊 - 支援新舊兩種格式
 function displayRouteInfo(routeData) {
   console.log("📊 顯示路線資訊:", routeData);
 
   const isNewFormat = routeData.normal !== undefined;
 
   if (isNewFormat) {
-    // ✅ 修正: 新格式的顯示邏輯
     let normalHTML = "";
     let accessibleHTML = "";
 
@@ -454,16 +455,17 @@ function displayRouteInfo(routeData) {
       `;
     }
 
+    // ✅ 修正：正確顯示警告訊息
+    const warningHTML = routeData.has_accessible_alternative
+      ? '<div class="route-success">✅ 已找到無障礙替代路線</div>'
+      : '<div class="route-warning">⚠️ 無法找到無障礙替代路線</div>';
+
     document.getElementById("routeDetails").innerHTML = `
       <div class="route-selection">
         <div class="route-selection-title">選擇路線類型：</div>
         ${accessibleHTML}
         ${normalHTML}
-        ${
-          !routeData.has_accessible_alternative
-            ? '<div class="route-warning">⚠️ 無法找到無障礙替代路線</div>'
-            : '<div class="route-success">✅ 已找到無障礙替代路線</div>'
-        }
+        ${warningHTML}
       </div>
     `;
   } else {

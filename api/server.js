@@ -38,11 +38,16 @@ app.get("/api/ramps", (req, res) => {
   }
 });
 
-// 路線規劃 API - 新增這個端點！
 app.post("/api/route", async (req, res) => {
   try {
-    const { start, end } = req.body;
-    console.log("📍 收到路線規劃請求:", { start, end });
+    const { start, end, mode, ramp } = req.body;
+    console.log("📍 收到路線規劃請求:", { start, end, mode, ramp });
+    console.log("🔍 後端接收的 ramp 參數:", {
+      type: typeof ramp,
+      isNull: ramp === null,
+      isUndefined: ramp === undefined,
+      value: ramp,
+    });
 
     if (!validLonLatPair(start) || !validLonLatPair(end)) {
       return res.status(400).json({
@@ -51,7 +56,8 @@ app.post("/api/route", async (req, res) => {
       });
     }
 
-    const result = await calculateRoute(start, end);
+    // 把 mode 和 ramp 都丟進去
+    const result = await calculateRoute(start, end, mode, ramp);
     console.log("✅ 路線規劃成功，回傳雙路線格式");
     res.json(result);
   } catch (err) {
