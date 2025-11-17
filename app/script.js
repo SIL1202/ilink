@@ -291,3 +291,8 @@ document.addEventListener("DOMContentLoaded", function () {
 
   console.log("🗺️ 花蓮無障礙路線規劃系統已啟動");
 });
+
+// 返回主頁按鈕事件
+document.getElementById("backBtn").addEventListener("click", function () {
+    window.location.href = "main.html"; 
+});

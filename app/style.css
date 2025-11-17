@@ -153,7 +153,7 @@ input[type="range"]::-webkit-slider-thumb {
   color: white;
   border: none;
   border-radius: 8px;
-  font-size: 16px;
+  font-size: 14px;
   cursor: pointer;
   margin-top: 8px;
   transition: background 0.2s;
@@ -178,6 +178,23 @@ input[type="range"]::-webkit-slider-thumb {
 
 .btn-secondary:hover {
   background: #545b62;
+}
+
+.btn-back {
+    padding: 10px 16px;
+    background-color: #4a90e2;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 14px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    margin-top: 8px;
+    transition: background-color 0.2s ease;
+}
+.btn-back:hover {
+    background-color: #357ab8;
 }
 
 .preset-buttons {
