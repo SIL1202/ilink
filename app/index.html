@@ -2,7 +2,7 @@
 <html lang="zh-Hant">
   <head>
     <meta charset="utf-8" />
-    <title>Leaflet 版｜花蓮無障礙到達路線</title>
+    <title>花蓮無障礙坡道路線規劃</title>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <link
       rel="stylesheet"
@@ -11,18 +11,11 @@
     <link rel="stylesheet" href="style.css" />
   </head>
   <body>
-    <div id="map"></div>
-
     <!-- 側邊欄 -->
     <div class="sidebar" id="sidebar">
       <div class="section">
-        <div class="section-title">
-          🗺️ 無障礙路線規劃
-          <span class="accessibility-badge badge-high" id="accessibilityBadge"
-            >高</span
-          >
-        </div>
-        <p class="description">為輪椅使用者規劃最適合的路線</p>
+        <div class="section-title">♿ 無障礙坡道路線規劃</div>
+        <p class="description">專注於無障礙坡道偵測的路線規劃服務</p>
       </div>
 
       <div class="section">
@@ -48,76 +41,9 @@
         <div class="instruction">點擊地圖設定位置（交替設定起點/終點）</div>
       </div>
 
-      <div class="section">
-        <div class="section-title">⚙️ 無障礙設定</div>
+      <button class="btn-primary" id="routeBtn">🗺️ 規劃路線</button>
 
-        <div class="input-group">
-          <label>最大坡度 <span id="inclineValue">8%</span></label>
-          <div class="slider-container">
-            <input
-              type="range"
-              id="incline"
-              min="0.02"
-              max="0.15"
-              step="0.01"
-              value="0.08"
-            />
-            <span class="slider-value" id="inclineDisplay">8%</span>
-          </div>
-          <div class="slider-labels">
-            <span class="label-green">平緩 (2-5%)</span> |
-            <span class="label-yellow">中等 (5-10%)</span> |
-            <span class="label-red">陡峭 (>10%)</span>
-          </div>
-        </div>
-
-        <div class="input-group">
-          <label>最小寬度 <span id="widthValue">90cm</span></label>
-          <div class="slider-container">
-            <input
-              type="range"
-              id="width"
-              min="0.6"
-              max="1.5"
-              step="0.1"
-              value="0.9"
-            />
-            <span class="slider-value" id="widthDisplay">90cm</span>
-          </div>
-          <div class="slider-labels">
-            <span class="label-red">狹窄 (&lt;80cm)</span> |
-            <span class="label-yellow">標準 (80-120cm)</span> |
-            <span class="label-green">寬敞 (>120cm)</span>
-          </div>
-        </div>
-
-        <div class="preset-buttons">
-          <button
-            class="btn-preset active"
-            data-incline="0.05"
-            data-width="1.2"
-          >
-            高無障礙
-          </button>
-          <button class="btn-preset" data-incline="0.08" data-width="0.9">
-            標準
-          </button>
-          <button class="btn-preset" data-incline="0.12" data-width="0.7">
-            基本
-          </button>
-        </div>
-      </div>
-
-      <!-- 路線規劃按鈕 -->
-      <button
-        class="btn-primary"
-        id="hybridRouteBtn"
-        style="background: #28a745"
-      >
-        🛣️ 智能路線規劃
-      </button>
-      <!-- <button class="btn-primary" id="simpleRouteBtn">🚀 一般路線規劃</button> -->
-      <button class="btn-secondary" id="clearBtn">🗑️ 清除所有</button>
+      <button class="btn-secondary" id="clearBtn">🗑️ 清除路線</button>
 
       <div class="route-info" id="routeInfo" style="display: none">
         <div class="route-title">路線資訊</div>
@@ -126,6 +52,8 @@
     </div>
 
     <button class="toggle-sidebar" id="toggleSidebar">☰</button>
+
+    <div id="map"></div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="script.js"></script>
