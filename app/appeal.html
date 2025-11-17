@@ -14,8 +14,20 @@
 
     <!-- 上方按鈕：跳到表單頁面 -->
     <div class="top-button">
-        <a href="form.html"><button>前往表單</button></a>
+        <button onclick= toggleForm()>前往表單</button> 
+        <iframe id="myForm" src="https://docs.google.com/forms/d/e/1FAIpQLSc-orRHxyBI0GtQY5aeM8sq89CWm155pdUFRMBrEgoE3c3sKw/viewform?embedded=true" width="640" height="486" style="display:none;" frameborder="0" marginheight="0" marginwidth="0">Loading…</iframe>
     </div>
+
+    <script>
+    function toggleForm() {
+        const form = document.getElementById('myForm');
+        if (form.style.display === 'none' || form.style.display === '') {
+            form.style.display = 'block'; // 顯示
+        } else {
+            form.style.display = 'none'; // 隱藏
+        }
+    }
+    </script>
 
     <!-- 中間標題 -->
     <h1 class="title"> or </h1>
