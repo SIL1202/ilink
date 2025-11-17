@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Main Page</title>
+    <link rel="stylesheet" href="main.css">
+</head>
+<body>
+
+    <!-- 返回上一頁按鈕 -->
+    <div class="back-button">
+        <button onclick="window.history.back()">⬅ 返回上一頁</button>
+    </div>
+
+    <!-- 上方按鈕：跳到表單頁面 -->
+    <div class="top-button">
+        <a href="form.html"><button>前往表單</button></a>
+    </div>
+
+    <!-- 主畫面 -->
+    <div id="home" class="page active">
+        <button onclick="showPage('second')">前往表單</button>
+    </div>
+
+    <!-- 第二畫面 -->
+    <div id="second" class="page">
+        <iframe src="https://docs.google.com/forms/d/e/1FAIpQLSc-orRHxyBI0GtQY5aeM8sq89CWm155pdUFRMBrEgoE3c3sKw/viewform?embedded=true" width="640" height="486" frameborder="0" marginheight="0" marginwidth="0">Loading…</iframe>
+        <button onclick="showPage('home')">返回上一頁</button>
+    </div>
+
+    <script>
+        function showPage(page) {
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+            document.getElementById(page).classList.add('active');
+        }
+    </script>
+
+
+    <h1 class="title"> or </h1>
+    <h1 class="title"> 各政府申訴平台 </h1>
+    <style>.title {
+        text-align: center;
+    }</style>
+
+
+    <!-- 下方按鈕列表 (2 columns × 3 rows) -->
+    <div class="button-grid">
+        <a href="page1.html"><button>台北市</button></a>
+        <a href="page2.html"><button>新北市</button></a>
+        <a href="page3.html"><button>台南市</button></a>
+        <a href="page4.html"><button>花蓮市</button></a>
+        <a href="page5.html"><button>...</button></a>
+        <a href="page6.html"><button>...</button></a>
+    </div>
+
+</body>
+</html>
