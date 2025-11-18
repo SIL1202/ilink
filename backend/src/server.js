@@ -1,22 +1,19 @@
 import express from "express";
 import cors from "cors";
 import fs from "fs";
-import path from "path";
+import path, { dirname } from "path";
 import { fileURLToPath } from "url";
 import { calculateRoute } from "./routes/route.js";
 import { validLonLatPair } from "./utils/geo.js";
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+const __dirname = dirname(fileURLToPath(import.meta.url));
 
 const app = express();
 const PORT = 3000;
 
 app.use(cors());
 app.use(express.json({ limit: "1mb" }));
-app.use(express.static(path.join(__dirname, "..", "app")));
 
-// 健康檢查
 app.get("/health", (req, res) => {
   res.json({
     ok: true,
@@ -27,7 +24,7 @@ app.get("/health", (req, res) => {
 
 // 坡道資料 API
 app.get("/api/ramps", (req, res) => {
-  const filePath = path.join(process.cwd(), "data", "ramps.json");
+  const filePath = path.join(__dirname, "data", "ramps.json");
   try {
     const json = fs.readFileSync(filePath, "utf-8");
     const ramps = JSON.parse(json);
@@ -69,6 +66,7 @@ app.post("/api/route", async (req, res) => {
   }
 });
 
-app.listen(PORT, () => {
-  console.log(`🚀 花蓮路線規劃服務啟動: http://localhost:${PORT}`);
+const port = process.env.PORT || PORT;
+app.listen(port, () => {
+  console.log(`伺服器已啟動，監聽埠號 ${port}`);
 });

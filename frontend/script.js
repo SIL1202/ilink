@@ -25,31 +25,26 @@ function initMap() {
 
   markersLayer.addTo(map);
 
-  // ✅ 修正: 初始化時載入坡道
   loadRamps();
 }
 
-// ✅ 修正: 載入坡道標記並顯示在地圖上
 async function loadRamps() {
   try {
-    const res = await fetch("/api/ramps");
+    const res = await fetch("http://backend:3000/api/ramps");
     if (!res.ok) throw new Error("HTTP FAIL " + res.status);
 
     const rampData = await res.json();
 
-    // ✅ 修正: 將資料賦值給全域變數
     ramps = rampData;
 
     console.log("載入坡道資料成功:", ramps.length, "個坡道");
 
-    // ✅ 新增: 在地圖上顯示坡道標記
     displayRampsOnMap(ramps);
   } catch (err) {
     console.error("載入坡道資料失敗:", err);
   }
 }
 
-// ✅ 新增: 在地圖上顯示坡道標記
 function displayRampsOnMap(ramps) {
   // 清除舊的坡道標記
   rampMarkers.forEach((marker) => map.removeLayer(marker));
@@ -161,7 +156,6 @@ async function drawRoute() {
       throw new Error("無效的座標格式，請使用 經度,緯度 格式");
     }
 
-    // ✅ 修正：每次都重新初始化 mode
     let mode = "normal"; // 預設為一般模式
     let rampPoint = null;
 
@@ -188,7 +182,7 @@ async function drawRoute() {
       console.log("➡️ 無障礙入口：", rampPoint);
     } else {
       console.log("🚶‍♂️ 終點沒有坡道 → 使用一般導航模式");
-      mode = "normal"; // ✅ 明確設定為一般模式
+      mode = "normal";
       rampPoint = null;
     }
 
@@ -196,13 +190,13 @@ async function drawRoute() {
     const body = {
       start: [slon, slat],
       end: [elon, elat],
-      mode: mode, // ✅ 現在 mode 一定是 "normal" 或 "accessible"
+      mode: mode,
       ramp: rampPoint,
     };
 
     console.log("📤 傳送到後端:", body);
 
-    const response = await fetch("/api/route", {
+    const response = await fetch("http://backend:3000/api/route", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
@@ -609,5 +603,5 @@ document.addEventListener("DOMContentLoaded", function () {
 
 // 返回主頁按鈕事件
 document.getElementById("backBtn").addEventListener("click", function () {
-    window.location.href = "main.html"; 
+  window.location.href = "main.html";
 });
