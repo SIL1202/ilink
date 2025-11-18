@@ -41,34 +41,3 @@ button {
 button:hover {
     background-color: #0056cc;
 }
-
-
-/* appeal.html contain: */
-
-.back-button {
-    width: 100%;
-}
-
-.back-button button {
-    background-color: #6c757d; /* 灰色 */
-    color: white;
-    border: none;
-    padding: 10px 16px;
-    border-radius: 6px;
-    font-size: 16px;
-    cursor: pointer;
-    display: inline-flex;
-    align-items: center;
-    transition: background-color 0.2s ease;
-}
-
-.back-button button:hover {
-    background-color: #545b62;
-}
-
-.button-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr; /* 兩欄 */
-    gap: 10px; /* 間距 */
-    margin-top: 20px;
-}

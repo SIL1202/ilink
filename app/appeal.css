@@ -1,0 +1,70 @@
+button {
+    width: 100%;
+    padding: 12px;
+    margin-top: 40px;
+    border: none;
+    border-radius: 6px;
+    font-size: 30px;
+    cursor: pointer;
+    background-color: #007aff;
+    color: white;
+    transition: background 0.2s;
+}
+
+button:hover {
+    background-color: #0056cc;
+}
+
+.back-button {
+    width: 100%;
+}
+
+.back-button button {
+    background-color: #6c757d; /* 灰色 */
+    color: white;
+    border: none;
+    padding: 10px 16px;
+    border-radius: 6px;
+    font-size: 16px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    transition: background-color 0.2s ease;
+}
+
+.back-button button:hover {
+    background-color: #545b62;
+}
+
+.button-grid{
+    display: grid;
+    grid-template-columns: repeat(2, 1fr); /* 兩欄 */
+    gap: 10px; /* 間距 */
+    margin-top: 20px;
+}
+
+.container {
+	width: 100%;
+}
+
+.collapse {
+	width: 100%;
+	padding-left: 15px;
+	border: none;
+}
+
+.collapse__items {
+	padding: 15px;
+	border: 3px solid #eee;
+	border-top: none;
+	text-align: justify;
+	display: none;
+}
+
+.content {
+    padding: 15px;
+    border: 3px solid #eee;
+    border-top: none;
+    text-align: justify;
+    display: none;
+}

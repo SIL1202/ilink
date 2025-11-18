@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <title>Main Page</title>
-    <link rel="stylesheet" href="main.css">
+    <link rel="stylesheet" href="appeal.css">
 </head>
 <body>
 
@@ -14,13 +14,13 @@
 
     <!-- 上方按鈕：跳到表單頁面 -->
     <div class="top-button">
-        <button onclick= toggleForm()>前往表單</button> 
+        <button onclick= "toggleForm('myForm')">前往表單</button> 
         <iframe id="myForm" src="https://docs.google.com/forms/d/e/1FAIpQLSc-orRHxyBI0GtQY5aeM8sq89CWm155pdUFRMBrEgoE3c3sKw/viewform?embedded=true" width="640" height="486" style="display:none;" frameborder="0" marginheight="0" marginwidth="0">Loading…</iframe>
     </div>
 
     <script>
-    function toggleForm() {
-        const form = document.getElementById('myForm');
+    function toggleForm(formId) {
+        const form = document.getElementById(formId);
         if (form.style.display === 'none' || form.style.display === '') {
             form.style.display = 'block'; // 顯示
         } else {
@@ -28,6 +28,7 @@
         }
     }
     </script>
+    
 
     <!-- 中間標題 -->
     <h1 class="title"> or </h1>
@@ -36,16 +37,227 @@
         text-align: center;
     }</style>
 
-
-    <!-- 下方按鈕列表 (2 columns × 3 rows) -->
+    <!-- 各政府申訴平台 -->
     <div class="button-grid">
-        <a href="page1.html"><button>台北市</button></a>
-        <a href="page2.html"><button>新北市</button></a>
-        <a href="page3.html"><button>台南市</button></a>
-        <a href="page4.html"><button>花蓮市</button></a>
-        <a href="page5.html"><button>...</button></a>
-        <a href="page6.html"><button>...</button></a>
-    </div>
+        <div class="container">
+            <button class="collapse">基隆市</button>
+            <div class="content">
+                <p>（都市發展處使用管理科）</p>
+                <a href="https://urban.klcg.gov.tw/tw/Subject/ThemesServiceLi?ClassId=080F0900" target="_blank">基隆市政府無障礙專屬網頁（基隆市都市發展處首頁>主題服務>建築物無障礙推動專區）</a><br>
+                <p> 專屬電子信箱：klcgbf@gmail.com </p>
+                <p> 專線電話：0800-304-168 </p>
+            </div>
+        </div>
 
+        <div class="container">
+            <button class="collapse">台北市</button>
+            <div class="content">
+                <p>（建築管理工程處）</p>
+                <a href="https://cmo.gov.taipei/News.aspx?n=054753DDC59E0F6C&sms=1BD2AA927F8BE55C" target="_blank">臺北市政府無障礙專屬網頁（臺北市建築管理工程處首頁＞建管業務綜合查詢＞宣導專區＞建築物無障礙專區）</a><br>
+                <p> 專屬電子信箱： <a href="https://1999.gov.taipei/Front/main" target="_blank"> 臺北市單一陳情系統 </a><br> </p>
+                <p> 專線電話：市民熱線1999#8387(外縣市請撥02-27208889轉8387) </p>
+            </div>
+        </div>
+
+        <div class="container">
+            <button class="collapse">新北市</button>
+            <div class="content">
+                <p>（工務局使用管理科）</p>
+                <a href="https://www.publicwork.ntpc.gov.tw/home.jsp?id=25&parentpath=0,4,22" target="_blank">新北市政府無障礙專屬網頁（新北市工務局首頁＞業務介紹＞使用管理科）</a><br>
+                <p> 專屬電子信箱： <a href="https://service.ntpc.gov.tw/contact/Ac991000.action" target="_blank"> 新北市市長信箱 </a><br> </p>
+                <p> 專線電話：02-29603456#5597 </p>
+            </div>
+        </div>
+
+        <div class="container">
+            <button class="collapse">桃園市</button>
+            <div class="content">
+                <p>（工務局）</p>
+                <a href="https://free.tycg.gov.tw/" target="_blank">桃園縣政府無障礙專屬網頁（桃園無障礙環境宣導網站）</a><br>
+                <p> 專屬電子信箱： free@mail.tycg.gov.tw </p>
+                <p> 專線電話：03-3322101#6112 </p>
+            </div>
+        </div>
+
+        <div class="container">
+            <button class="collapse">新竹市</button>
+            <div class="content">
+                <p>（工務處建築管理科）</p>
+                <a href="https://dep-publicwork.hccg.gov.tw/ch/home.jsp?id=65&parentpath=0,10" target="_blank">新竹市政府無障礙專屬網頁（新竹市工務處首頁>無障礙專屬網頁）</a><br>
+                <p> 專屬電子信箱： hc0901@ems.hccg.gov.tw </p>
+                <p> 專線電話：03-5216121#415 </p>
+            </div>
+        </div>
+
+        <div class="container">
+            <button class="collapse">新竹縣</button>
+            <div class="content">
+                <p>（工務處建築管理科）</p>
+                <a href="http://bilweb.hchg.gov.tw/freespace/index.aspx" target="_blank">新竹縣政府無障礙專屬網頁（新竹縣無障礙生活環境網站）</a><br>
+                <p> 專屬電子信箱： freespace@hchg.gov.tw </p>
+                <p> 專線電話：03-5518101#6360 </p>
+            </div>
+        </div>
+
+        <div class="container">
+            <button class="collapse">苗栗縣</button>
+            <div class="content">
+                <p>（工商發展處建築管理科、使用管理科）</p>
+                <a href="https://www.dahu.gov.tw/economic_development/index.php?forewordTypeID=0" target="_blank">苗栗縣政府工商發展處（沒有無障礙專屬網頁）</a><br>
+                <p> 專屬電子信箱： <a href="https://service.miaoli.gov.tw/Default.aspx" target="_blank"> 縣長信箱 </a><br> </p>
+                <p> 專線電話：03-5518101#6360 </p>
+            </div>
+        </div>
+
+        <div class="container">
+            <button class="collapse">台中市</button>
+            <div class="content">
+                <p>（都市發展局）</p>
+                <a href="about:blank" target="_blank">臺中市政府無障礙專屬網頁（臺中市都市發展局首頁＞公共建築物無障礙網頁）</a><br>
+                <p> 專屬電子信箱：e0000@taichung.gov.tw </p>
+                <p> 專線電話：04-22289111-64301 </p>
+            </div>
+        </div>
+
+        <div class="container">
+            <button class="collapse">彰化縣</button>
+            <div class="content">
+                <p>（建設處）</p>
+                <a href="https://economic.chcg.gov.tw/07other/other01_list.aspx?topsn=827" target="_blank">彰化縣政府無障礙專屬網頁（彰化縣建設處首頁＞無障礙網頁＞無障礙環境業務督導專區）</a><br>
+                <p> 專屬電子信箱：a620450@email.chcg.gov.tw </p>
+                <p> 專線電話：04-7531216 </p>
+            </div>
+        </div>
+
+        <div class="container">
+            <button class="collapse">南投縣</button>
+            <div class="content">
+                <p>（建設處）</p>
+                <a href="https://disable.nantou.gov.tw/?dptid=376480000au180000&catetype=01&cid=2073" target="_blank">南投縣政府無障礙專屬網頁（南投縣無障礙生活環境網站）</a><br>
+                <p> 專屬電子信箱：<a href="https://www.nantou.gov.tw/big5/index.php" target="_blank"> 南投縣縣長信箱 </a><br> </p>
+                <p> 專線電話：049-2227300 </p>
+            </div>
+        </div>
+
+        <div class="container">
+            <button class="collapse">雲林縣</button>
+            <div class="content">
+                <p>（建設處）</p>
+                <a href="http://www4.yunlin.gov.tw/economic/" target="_blank">雲林縣政府無障礙專屬網頁（雲林縣建設處首頁＞雲林公共設施無障礙專區）</a><br>
+                <p> 專屬電子信箱：ylhg35129@mail.yunlin.gov.tw </p>
+                <p> 專線電話：05-5522219 </p>
+            </div>
+        </div>
+
+        <div class="container">
+            <button class="collapse">嘉義市</button>
+            <div class="content">
+                <p>（公務處）</p>
+                <a href="https://www.chiayi.gov.tw/Default.aspx" target="_blank">嘉義市政府無障礙專屬網頁（嘉義市公共建築物無障礙設施設備網）</a><br>
+                <p> 專屬電子信箱：cycg314@ems.chiayi.gov.tw </p>
+                <p> 專線電話：05-2254321 分機214、323或05-2251999 </p>
+            </div>
+        </div>
+
+        <div class="container">
+            <button class="collapse">嘉義縣</button>
+            <div class="content">
+                <p>（經濟發展處）</p>
+                <a href="https://economic.cyhg.gov.tw/News6.aspx?n=308FFBA479C6F328&sms=2275E2B118E6B06D" target="_blank">嘉義縣政府無障礙專屬網頁（嘉義縣經濟發展處首頁＞公共建築物無障礙專區）</a><br>
+                <p> 專屬電子信箱：cop951753@mail.cyhg.gov.tw </p>
+                <p> 專線電話：(05)3620123#158 </p>
+            </div>
+        </div>
+        
+        <div class="container">
+            <button class="collapse">台南市</button>
+            <div class="content">
+                <p>（工務局使用管理科）</p>
+                <a href="https://publicworks.tainan.gov.tw/sub_proj/accessibilityN/" target="_blank">臺南市政府無障礙專屬網頁（臺南市政府工務局＞工務資訊＞無障礙環境宣導）</a><br>
+                <p> 專屬電子信箱：<a href="https://cmsweb.tainan.gov.tw/RWD/#/report" target="_blank"> 台南市市長信箱 </a><br> </p>
+                <p> 專線電話：06-3908789 </p>
+            </div>
+        </div>
+
+        <div class="container">
+            <button class="collapse">高雄市</button>
+            <div class="content">
+                <p>（工務局建築管理處）</p>
+                <a href="https://build.kcg.gov.tw/Asenv/" target="_blank">高雄市政府無障礙專屬網頁（高雄市工務局首頁＞無障礙環境宣導）</a><br>
+                <p> 專屬電子信箱：ralice57@kcg.gov.tw</p>
+                <p> 專線電話：07-3315502 </p>
+            </div>
+        </div>
+        
+        <div class="container">
+            <button class="collapse">屏東縣</button>
+            <div class="content">
+                <p>（城鄉發展處建築管理科）</p>
+                <a href="https://www.pthg.gov.tw/planeab/cp.aspx?n=8C9663DE21436951" target="_blank">屏東縣政府無障礙專屬網頁（屏東縣城鄉發展處首頁>主題專區>屏東縣政府公共建築物無障礙環境）</a><br>
+                <p> 專屬電子信箱：a250064@oa.pthg.gov.tw</p>
+                <p> 專線電話：08-7331524</p>
+            </div>
+        </div>
+        
+        <div class="container">
+            <button class="collapse">宜蘭縣</button>
+            <div class="content">
+                <p>（建設處建築管理科）</p>
+                <a href="http://cons.e-land.gov.tw/cp.aspx?n=69C5B6491F8E97EE&s=FA4A358B4075AADE" target="_blank">宜蘭縣政府無障礙專屬網頁（宜蘭縣建設處首頁＞資訊公開＞建築物無障礙專區）</a><br>
+                <p> 專屬電子信箱：pan@mail.e-land.gov.tw </p>
+                <p> 專線電話：03-9251000#1312 </p>
+            </div>
+        </div>
+        
+        <div class="container">
+            <button class="collapse">花蓮縣</button>
+            <div class="content">
+                <p>（建設處建築管理科）</p>
+                <a href="https://www.hl.gov.tw/News_Content.aspx?n=4085&s=410060" target="_blank">花蓮縣政府建設處建築管理科網頁（沒有無障礙專屬網頁）</a><br>
+                <p> 專屬電子信箱：hsuido@hl.gov.tw </p>
+                <p> 專線電話：03-8233483 </p>
+            </div>
+        </div>
+        
+        <div class="container">
+            <button class="collapse">台東縣</button>
+            <div class="content">
+                <p>（建設處）</p>
+                <a href="https://www.taitung.gov.tw/est/est02/est0201/" target="_blank">台東縣政府無障礙專屬網頁（台東縣建設處首頁＞建築管理科）</a><br>
+                <p> 專屬電子信箱：jaytab@ems.taitung.gov.tw </p>
+                <p> 專線電話：089-340416 </p>
+            </div>
+        </div>
+        
+        <div class="container">
+            <button class="collapse">澎湖縣</button>
+            <div class="content">
+                <p>（建設處建築管理科）</p>
+                <a href="https://www.penghu.gov.tw/economic/home.jsp?id=76" target="_blank">澎湖縣政府無障礙專屬網頁（澎湖縣建設處首頁>無障礙建築）</a><br>
+                <p> 專屬電子信箱：penghu03@mail.penghu.gov.tw </p>
+                <p> 專線電話：06-9272203</p>
+            </div>
+        </div>
+        
+        <div class="container">
+            <button class="collapse">金門縣</button>
+            <div class="content">
+                <p>（建設處）</p>
+                <a href="https://ead.kinmen.gov.tw/default.aspx" target="_blank">金門縣政府無障礙專屬網頁（金門縣建設處首頁>無障礙專區）</a><br>
+                <p> 專屬電子信箱：<a href="http://leaderbox.kinmen.gov.tw/swsfront35/SWSF/SWSF01014.aspx" target="_blank"> 金門縣縣長信箱 </a><br> </p>
+            </div>
+        </div>
+        
+        <div class="container">
+            <button class="collapse">連江縣</button>
+            <div class="content">
+                <p>（工務局）</p>
+                <a href="https://www.matsu.gov.tw/News_Content.aspx?n=28&s=4082" target="_blank">連江縣政府無障礙專屬網頁（連江縣建設處首頁＞無障礙環境宣導）</a><br>
+                <p> 專屬電子信箱：onizuka862@yahoo.com.tw </p>
+                <p> 專線電話：083-625398#48 </p>
+            </div>
+        </div>
+    </div>
+<script src="appeal.js"></script>
 </body>
 </html>
