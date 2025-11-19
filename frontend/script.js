@@ -30,7 +30,7 @@ function initMap() {
 
 async function loadRamps() {
   try {
-    const res = await fetch("http://134.208.3.186:3000/api/ramps");
+    const res = await fetch("http://localhost:3000/api/ramps");
     if (!res.ok) throw new Error("HTTP FAIL " + res.status);
 
     const rampData = await res.json();
@@ -111,24 +111,28 @@ async function sendMessage() {
   addMessage(message, true);
   chatInput.value = "";
 
-  // 呼叫後端 AI
+  // ✅ 新增：顯示正在輸入的指示器
+  const typingIndicator = addTypingIndicator();
+
   try {
-    const res = await fetch("http://134.208.3.186:3000/api/chat", {
-      // 跟 ramps 一樣的 IP
+    const res = await fetch("http://localhost:3000/api/chat", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ message: message }), // 後端現在支援 message
+      body: JSON.stringify({ message: message }),
     });
 
     const data = await res.json();
     console.log("AI 回傳:", data);
+
+    // ✅ 移除正在輸入指示器
+    removeTypingIndicator(typingIndicator);
 
     if (data.found && data.lat && data.lon) {
       // 成功找到地點 → 飛過去 + 加藍色大 ♿
       const lat = parseFloat(data.lat);
       const lon = parseFloat(data.lon);
 
-      map.setView([lat, lon], 18); // 飛過去 + 拉近
+      map.setView([lat, lon], 18);
 
       // 清除舊的終點標記
       if (endMarker) map.removeLayer(endMarker);
@@ -148,17 +152,56 @@ async function sendMessage() {
         )
         .openPopup();
 
-      // 把終點座標填進輸入框（方便按規劃路線）
       document.getElementById("end").value = `${lon},${lat}`;
 
-      addMessage(`${data.reply || "已幫您標記在地图上！"} ♿✨`, false);
+      addMessage(`${data.reply || "已幫您標記在地圖上！"}`, false);
     } else {
-      // 沒找到或其它 intent
       addMessage(data.reply || "我還在學習中...請再說一次～", false);
     }
   } catch (err) {
+    removeTypingIndicator(typingIndicator);
+
     console.error("Chat 錯誤:", err);
     addMessage("⚠️ 連線失敗，請檢查網路", false);
+  }
+}
+
+// ✅ 新增：顯示正在輸入的指示器
+function addTypingIndicator() {
+  const div = document.createElement("div");
+  div.id = "typing-indicator";
+  div.style.margin = "8px 0";
+  div.style.padding = "10px 12px";
+  div.style.borderRadius = "12px";
+  div.style.maxWidth = "80%";
+  div.style.background = "#e9ecef";
+  div.style.color = "#666";
+  div.style.fontStyle = "italic";
+  div.style.display = "flex";
+  div.style.alignItems = "center";
+  div.style.gap = "8px";
+
+  const dots = document.createElement("div");
+  dots.className = "typing-dots";
+  dots.innerHTML = `
+    <span></span>
+    <span></span>
+    <span></span>
+  `;
+
+  div.appendChild(document.createTextNode("AI 正在思考"));
+  div.appendChild(dots);
+
+  chatMessages.appendChild(div);
+  scrollToBottom();
+
+  return div;
+}
+
+// ✅ 新增：移除正在輸入指示器
+function removeTypingIndicator(typingIndicator) {
+  if (typingIndicator && typingIndicator.parentNode) {
+    typingIndicator.parentNode.removeChild(typingIndicator);
   }
 }
 
@@ -168,49 +211,36 @@ chatInput.addEventListener("keypress", (e) => {
   if (e.key === "Enter") sendMessage();
 });
 
-// 頁面載入時歡迎訊息
-document.addEventListener("DOMContentLoaded", () => {
+// 初始化
+document.addEventListener("DOMContentLoaded", function () {
+  initMap();
+  initSidebar();
+  initMapClick();
+  bindEvents();
+
+  // ✅ 修改聊天按鈕事件監聽器
+  document
+    .getElementById("chat-toggle-btn")
+    .addEventListener("click", function () {
+      const chatContainer = document.getElementById("chat-container");
+      chatContainer.classList.toggle("show");
+
+      // 聚焦到輸入框
+      if (chatContainer.classList.contains("show")) {
+        setTimeout(() => {
+          document.getElementById("chat-input").focus();
+        }, 100);
+      }
+    });
+
+  // 頁面載入時歡迎訊息
   addMessage(
-    "您好！我是 WheelWay AI 小助手 ♿\n請問您想去哪裡？（例如：我要去圖書館）",
+    "您好！我是 WheelWay AI 小助手\n請問您想去哪裡？（例如：我要去圖書館）",
     false,
   );
-});
 
-// // Chat message handle
-// async function sendMessage() {
-//   const input = document.getElementById("chat-input");
-//   const text = input.value.trim();
-//   if (!text) return;
-//
-//   appendMessage("user", text);
-//   input.value = "";
-//
-//   const res = await fetch("/api/chat", {
-//     method: "POST",
-//     headers: { "Content-Type": "application/json" },
-//     body: JSON.stringify({ message: text })
-//   });
-//
-//   const data = await res.json();
-//   appendMessage("ai", data.reply);
-// }
-//
-// function appendMessage(role, text) {
-//   const box = document.getElementById("chat-messages");
-//   const div = document.createElement("div");
-//   div.className = role;
-//   div.textContent = text;
-//   box.appendChild(div);
-//   box.scrollTop = box.scrollHeight;
-// }
-//
-// document.getElementById("send-btn").addEventListener("click", sendMessage);
-//
-// document.getElementById("chat-input").addEventListener("keydown", (e) => {
-//   if (e.key === "Enter") sendMessage();
-// });
-//
-// 側邊欄控制
+  console.log("花蓮無障礙坡道路線規劃系統已啟動");
+});
 
 function initSidebar() {
   const sidebar = document.getElementById("sidebar");
@@ -221,6 +251,11 @@ function initSidebar() {
     toggleBtn.textContent = sidebar.classList.contains("collapsed")
       ? "☰"
       : "✕";
+
+    console.log(
+      "側邊欄狀態:",
+      sidebar.classList.contains("collapsed") ? "收起" : "展開",
+    );
   });
 }
 
@@ -338,7 +373,7 @@ async function drawRoute() {
 
     console.log("📤 傳送到後端:", body);
 
-    const response = await fetch("http://134.208.3.186:3000/api/route", {
+    const response = await fetch("http://localhost:3000/api/route", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
@@ -468,7 +503,7 @@ function drawRoutesOnMap(routeData) {
           if (props.summary) {
             const popupContent = `
               <div style="min-width: 200px;">
-                <strong>🗺️ 規劃路線</strong><br>
+                <strong>規劃路線</strong><br>
                 距離: ${props.summary.distance.toFixed(0)} 公尺<br>
                 時間: ${props.summary.duration} 分鐘<br>
                 <small>單一路線模式</small>
@@ -636,10 +671,9 @@ function displayRouteInfo(routeData) {
   }
 }
 
-// ✅ 新增: 切換路線顯示函數
 function toggleRouteDisplay(routeType) {
   currentRouteType = routeType;
-  console.log("🔄 切換到路線類型:", routeType);
+  console.log("切換到路線類型:", routeType);
 
   if (normalRouteLayer && accessibleRouteLayer) {
     if (routeType === "normal") {
@@ -740,7 +774,7 @@ document.addEventListener("DOMContentLoaded", function () {
   initMapClick();
   bindEvents();
 
-  console.log("🗺️ 花蓮無障礙坡道路線規劃系統已啟動");
+  console.log("花蓮無障礙坡道路線規劃系統已啟動");
 });
 
 // 返回主頁按鈕事件

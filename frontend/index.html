@@ -55,64 +55,20 @@
     </div>
 
     <!--Chat UI-->
-    <!-- 原本的 chat-container 加上 id，並預設隱藏 -->
-    <div id="chat-container" style="display: none; flex-direction: column">
-      <div
-        id="chat-messages"
-        style="flex: 1; overflow-y: auto; padding: 10px"
-      ></div>
-      <div
-        id="chat-input-box"
-        style="
-          display: flex;
-          gap: 8px;
-          padding: 10px;
-          background: white;
-          border-top: 1px solid #ddd;
-        "
-      >
+    <!-- Chat UI - 移除所有內聯樣式 -->
+    <div id="chat-container">
+      <div id="chat-messages"></div>
+      <div id="chat-input-box">
         <input
           id="chat-input"
           type="text"
           placeholder="問我任何問題...（例如：我要去圖書館）"
-          style="
-            flex: 1;
-            padding: 12px;
-            border-radius: 8px;
-            border: 1px solid #ccc;
-            font-size: 14px;
-          "
         />
-        <button
-          id="send-btn"
-          style="
-            padding: 12px 20px;
-            background: #4a90e2;
-            color: white;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-          "
-        >
-          送出
-        </button>
+        <button id="send-btn">送出</button>
       </div>
     </div>
 
-    <!-- <!-- 新增：超帥的圓形懸浮按鈕（右下角）-->
-    -->
-    <!-- <button id="chat-toggle-btn" title="開啟 AI 小助手">💬</button> -->
-    <!-- <!--Chat UI-->
-    -->
-    <!-- <div id="chat-container"> -->
-    <!--   <div id="chat-messages"></div> -->
-    <!---->
-    <!--   <div id="chat-input-box"> -->
-    <!--     <input id="chat-input" type="text" placeholder="詢問任何問題..." /> -->
-    <!--     <button id="send-btn">送出</button> -->
-    <!--   </div> -->
-    <!-- </div> -->
-
+    <button id="chat-toggle-btn" title="開啟 AI 小助手">💬</button>
     <button class="toggle-sidebar" id="toggleSidebar">☰</button>
 
     <div id="map"></div>
