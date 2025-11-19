@@ -3,6 +3,12 @@ services:
     build: ./backend
     ports:
       - "3000:3000"
+    env_file:
+      - .env
+    environment:
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     networks:
       - wheelnet
 

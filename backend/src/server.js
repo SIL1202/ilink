@@ -5,6 +5,7 @@ import path, { dirname } from "path";
 import { fileURLToPath } from "url";
 import { calculateRoute } from "./routes/route.js";
 import { validLonLatPair } from "./utils/geo.js";
+import chatRouter from "./ai/chat.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -13,6 +14,7 @@ const PORT = 3000;
 
 app.use(cors());
 app.use(express.json({ limit: "1mb" }));
+app.use("/api", chatRouter);
 
 app.get("/health", (req, res) => {
   res.json({
@@ -38,8 +40,8 @@ app.get("/api/ramps", (req, res) => {
 app.post("/api/route", async (req, res) => {
   try {
     const { start, end, mode, ramp } = req.body;
-    console.log("📍 收到路線規劃請求:", { start, end, mode, ramp });
-    console.log("🔍 後端接收的 ramp 參數:", {
+    console.log("收到路線規劃請求:", { start, end, mode, ramp });
+    console.log("後端接收的 ramp 參數:", {
       type: typeof ramp,
       isNull: ramp === null,
       isUndefined: ramp === undefined,
@@ -55,7 +57,7 @@ app.post("/api/route", async (req, res) => {
 
     // 把 mode 和 ramp 都丟進去
     const result = await calculateRoute(start, end, mode, ramp);
-    console.log("✅ 路線規劃成功，回傳雙路線格式");
+    console.log("路線規劃成功，回傳雙路線格式");
     res.json(result);
   } catch (err) {
     console.error("路線規劃錯誤:", err);
@@ -67,6 +69,6 @@ app.post("/api/route", async (req, res) => {
 });
 
 const port = process.env.PORT || PORT;
-app.listen(port, () => {
-  console.log(`伺服器已啟動，監聽埠號 ${port}`);
+app.listen(port, "0.0.0.0", () => {
+  console.log(`server running ${port}`);
 });

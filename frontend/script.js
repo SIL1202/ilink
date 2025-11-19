@@ -30,7 +30,7 @@ function initMap() {
 
 async function loadRamps() {
   try {
-    const res = await fetch("http://backend:3000/api/ramps");
+    const res = await fetch("http://134.208.3.186:3000/api/ramps");
     if (!res.ok) throw new Error("HTTP FAIL " + res.status);
 
     const rampData = await res.json();
@@ -68,6 +68,40 @@ function displayRampsOnMap(ramps) {
     rampMarkers.push(marker);
   });
 }
+
+// Chat message handle
+async function sendMessage() {
+  const input = document.getElementById("chat-input");
+  const text = input.value.trim();
+  if (!text) return;
+
+  appendMessage("user", text);
+  input.value = "";
+
+  const res = await fetch("/api/chat", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ message: text })
+  });
+
+  const data = await res.json();
+  appendMessage("ai", data.reply);
+}
+
+function appendMessage(role, text) {
+  const box = document.getElementById("chat-messages");
+  const div = document.createElement("div");
+  div.className = role;
+  div.textContent = text;
+  box.appendChild(div);
+  box.scrollTop = box.scrollHeight;
+}
+
+document.getElementById("send-btn").addEventListener("click", sendMessage);
+
+document.getElementById("chat-input").addEventListener("keydown", (e) => {
+  if (e.key === "Enter") sendMessage();
+});
 
 // 側邊欄控制
 function initSidebar() {
@@ -196,7 +230,7 @@ async function drawRoute() {
 
     console.log("📤 傳送到後端:", body);
 
-    const response = await fetch("http://backend:3000/api/route", {
+    const response = await fetch("http://134.208.3.186:3000/api/route", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
@@ -605,3 +639,5 @@ document.addEventListener("DOMContentLoaded", function () {
 document.getElementById("backBtn").addEventListener("click", function () {
   window.location.href = "main.html";
 });
+
+
