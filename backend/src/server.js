@@ -14,6 +14,7 @@ const PORT = 3000;
 
 app.use(cors());
 app.use(express.json({ limit: "1mb" }));
+
 app.use("/api", chatRouter);
 
 app.get("/health", (req, res) => {

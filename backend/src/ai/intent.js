@@ -8,10 +8,6 @@ export async function classifyUserIntent(message) {
 
 功能包含：
 - nlq: 自然語言查詢地點
-- route: 問路、找路線
-- summary: 要求總結、報表
-- guide: 要互動式指導
-- advice: 無障礙適應建議
 
 僅回傳分類代號。
 使用者訊息：「${message}」

@@ -69,41 +69,149 @@ function displayRampsOnMap(ramps) {
   });
 }
 
-// Chat message handle
-async function sendMessage() {
-  const input = document.getElementById("chat-input");
-  const text = input.value.trim();
-  if (!text) return;
+// ==================== Chat 功能完整實作（終極版）====================
+const chatMessages = document.getElementById("chat-messages");
+const chatInput = document.getElementById("chat-input");
+const sendBtn = document.getElementById("send-btn");
 
-  appendMessage("user", text);
-  input.value = "";
-
-  const res = await fetch("/api/chat", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ message: text })
-  });
-
-  const data = await res.json();
-  appendMessage("ai", data.reply);
+// 自動滾到最底
+function scrollToBottom() {
+  chatMessages.scrollTop = chatMessages.scrollHeight;
 }
 
-function appendMessage(role, text) {
-  const box = document.getElementById("chat-messages");
+// 加入訊息到聊天視窗
+function addMessage(text, isUser = false) {
   const div = document.createElement("div");
-  div.className = role;
+  div.style.margin = "8px 0";
+  div.style.padding = "10px 12px";
+  div.style.borderRadius = "12px";
+  div.style.maxWidth = "80%";
+  div.style.wordWrap = "break-word";
+
+  if (isUser) {
+    div.style.background = "#4a90e2";
+    div.style.color = "white";
+    div.style.alignSelf = "flex-end";
+    div.style.marginLeft = "auto";
+  } else {
+    div.style.background = "#e9ecef";
+    div.style.color = "#333";
+  }
+
   div.textContent = text;
-  box.appendChild(div);
-  box.scrollTop = box.scrollHeight;
+  chatMessages.appendChild(div);
+  scrollToBottom();
 }
 
-document.getElementById("send-btn").addEventListener("click", sendMessage);
+// 送出訊息（支援 Enter 鍵）
+async function sendMessage() {
+  const message = chatInput.value.trim();
+  if (!message) return;
 
-document.getElementById("chat-input").addEventListener("keydown", (e) => {
+  addMessage(message, true);
+  chatInput.value = "";
+
+  // 呼叫後端 AI
+  try {
+    const res = await fetch("http://134.208.3.186:3000/api/chat", {
+      // 跟 ramps 一樣的 IP
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ message: message }), // 後端現在支援 message
+    });
+
+    const data = await res.json();
+    console.log("AI 回傳:", data);
+
+    if (data.found && data.lat && data.lon) {
+      // 成功找到地點 → 飛過去 + 加藍色大 ♿
+      const lat = parseFloat(data.lat);
+      const lon = parseFloat(data.lon);
+
+      map.setView([lat, lon], 18); // 飛過去 + 拉近
+
+      // 清除舊的終點標記
+      if (endMarker) map.removeLayer(endMarker);
+
+      // 加一個超顯眼的藍色大 ♿
+      endMarker = L.marker([lat, lon], {
+        icon: L.divIcon({
+          className: "chat-target-marker",
+          html: `<div style="font-size: 40px; text-shadow: 0 0 10px white;">♿</div>`,
+          iconSize: [40, 40],
+          iconAnchor: [20, 40],
+        }),
+      })
+        .addTo(map)
+        .bindPopup(
+          `<strong>${data.place || "目標地點"}</strong><br>AI 帶您來這裡！`,
+        )
+        .openPopup();
+
+      // 把終點座標填進輸入框（方便按規劃路線）
+      document.getElementById("end").value = `${lon},${lat}`;
+
+      addMessage(`${data.reply || "已幫您標記在地图上！"} ♿✨`, false);
+    } else {
+      // 沒找到或其它 intent
+      addMessage(data.reply || "我還在學習中...請再說一次～", false);
+    }
+  } catch (err) {
+    console.error("Chat 錯誤:", err);
+    addMessage("⚠️ 連線失敗，請檢查網路", false);
+  }
+}
+
+// 綁定事件
+sendBtn.addEventListener("click", sendMessage);
+chatInput.addEventListener("keypress", (e) => {
   if (e.key === "Enter") sendMessage();
 });
 
+// 頁面載入時歡迎訊息
+document.addEventListener("DOMContentLoaded", () => {
+  addMessage(
+    "您好！我是 WheelWay AI 小助手 ♿\n請問您想去哪裡？（例如：我要去圖書館）",
+    false,
+  );
+});
+
+// // Chat message handle
+// async function sendMessage() {
+//   const input = document.getElementById("chat-input");
+//   const text = input.value.trim();
+//   if (!text) return;
+//
+//   appendMessage("user", text);
+//   input.value = "";
+//
+//   const res = await fetch("/api/chat", {
+//     method: "POST",
+//     headers: { "Content-Type": "application/json" },
+//     body: JSON.stringify({ message: text })
+//   });
+//
+//   const data = await res.json();
+//   appendMessage("ai", data.reply);
+// }
+//
+// function appendMessage(role, text) {
+//   const box = document.getElementById("chat-messages");
+//   const div = document.createElement("div");
+//   div.className = role;
+//   div.textContent = text;
+//   box.appendChild(div);
+//   box.scrollTop = box.scrollHeight;
+// }
+//
+// document.getElementById("send-btn").addEventListener("click", sendMessage);
+//
+// document.getElementById("chat-input").addEventListener("keydown", (e) => {
+//   if (e.key === "Enter") sendMessage();
+// });
+//
 // 側邊欄控制
+
 function initSidebar() {
   const sidebar = document.getElementById("sidebar");
   const toggleBtn = document.getElementById("toggleSidebar");
@@ -639,5 +747,3 @@ document.addEventListener("DOMContentLoaded", function () {
 document.getElementById("backBtn").addEventListener("click", function () {
   window.location.href = "main.html";
 });
-
-
