@@ -25,12 +25,17 @@ body,
 
 .sidebar.collapsed {
   transform: translateX(-100%);
+  --sidebar-btn-position: 10px;
+}
+
+.sidebar:not(.collapsed) {
+  --sidebar-btn-position: 330px;
 }
 
 .toggle-sidebar {
   position: absolute;
   top: 10px;
-  left: 330px;
+  left: var(--sidebar-btn-position, 330px);
   z-index: 1001;
   background: #fff;
   border: none;
@@ -39,10 +44,7 @@ body,
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
   cursor: pointer;
   font-size: 16px;
-}
-
-.sidebar.collapsed + .toggle-sidebar {
-  left: 10px;
+  transition: left 0.3s ease;
 }
 
 .toggle-sidebar:hover {

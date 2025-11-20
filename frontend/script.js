@@ -9,7 +9,6 @@ let markersLayer = L.layerGroup();
 let clickCount = 0;
 let currentRouteType = "accessible"; // 預設顯示無障礙路線
 
-// ✅ 修正: 確保 ramps 變數有正確的資料
 let ramps = [];
 
 // 初始化地圖
@@ -24,6 +23,8 @@ function initMap() {
   ).addTo(map);
 
   markersLayer.addTo(map);
+
+  map.zoomControl.setPosition("topright");
 
   loadRamps();
 }
@@ -251,7 +252,6 @@ function initSidebar() {
     toggleBtn.textContent = sidebar.classList.contains("collapsed")
       ? "☰"
       : "✕";
-
     console.log(
       "側邊欄狀態:",
       sidebar.classList.contains("collapsed") ? "收起" : "展開",
@@ -540,6 +540,7 @@ function drawRoutesOnMap(routeData) {
           .getElementById("end")
           .value.split(",")
           .map(Number);
+        showNavigationButton(routeData);
 
         const safeBounds = L.latLngBounds([
           [startCoords[1], startCoords[0]],
@@ -669,6 +670,7 @@ function displayRouteInfo(routeData) {
       `;
     }
   }
+  showNavigationButton(routeData);
 }
 
 function toggleRouteDisplay(routeType) {
