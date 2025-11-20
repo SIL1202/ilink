@@ -604,3 +604,17 @@ input[type="range"]::-webkit-slider-thumb {
   margin-top: 10px;
   font-size: 14px;
 }
+
+.route-redirect-info {
+  background: #e7f3ff;
+  border: 1px solid #b3d9ff;
+  border-radius: 6px;
+  padding: 8px 12px;
+  margin-bottom: 10px;
+  text-align: center;
+}
+
+.route-redirect-info small {
+  color: #0066cc;
+  font-weight: 500;
+}

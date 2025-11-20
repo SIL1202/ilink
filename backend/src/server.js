@@ -6,6 +6,7 @@ import { fileURLToPath } from "url";
 import { calculateRoute } from "./routes/route.js";
 import { validLonLatPair } from "./utils/geo.js";
 import chatRouter from "./ai/chat.js";
+import navigationRouter from "./routes/navigation.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -16,12 +17,14 @@ app.use(cors());
 app.use(express.json({ limit: "1mb" }));
 
 app.use("/api", chatRouter);
+app.use("/api", navigationRouter);
 
 app.get("/health", (req, res) => {
   res.json({
     ok: true,
     service: "花蓮無障礙坡道路線規劃",
     version: "1.0.0",
+    features: ["路線規劃", "AI聊天", "即時導航"],
   });
 });
 

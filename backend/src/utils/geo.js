@@ -44,3 +44,97 @@ export function validLonLatPair(p) {
     p[1] <= 90
   );
 }
+
+// 新增導航相關的地理計算函數
+
+/**
+ * 計算點到線段的最短距離
+ * @param {Array} point - [lon, lat] 座標
+ * @param {Array} lineStart - 線段起點 [lon, lat]
+ * @param {Array} lineEnd - 線段終點 [lon, lat]
+ * @returns {number} 最短距離（公尺）
+ */
+export function distanceToLineSegment(point, lineStart, lineEnd) {
+  const [x, y] = point;
+  const [x1, y1] = lineStart;
+  const [x2, y2] = lineEnd;
+
+  const A = x - x1;
+  const B = y - y1;
+  const C = x2 - x1;
+  const D = y2 - y1;
+
+  const dot = A * C + B * D;
+  const lenSq = C * C + D * D;
+  let param = -1;
+
+  if (lenSq !== 0) {
+    param = dot / lenSq;
+  }
+
+  let xx, yy;
+
+  if (param < 0) {
+    xx = x1;
+    yy = y1;
+  } else if (param > 1) {
+    xx = x2;
+    yy = y2;
+  } else {
+    xx = x1 + param * C;
+    yy = y1 + param * D;
+  }
+
+  const dx = x - xx;
+  const dy = y - yy;
+
+  return haversineMeters([x, y], [xx, yy]);
+}
+
+/**
+ * 計算沿路線的進度百分比
+ * @param {Array} currentPosition - 當前位置 [lon, lat]
+ * @param {Array} routeCoordinates - 路線座標陣列
+ * @returns {number} 進度百分比 (0-100)
+ */
+export function calculateRouteProgress(currentPosition, routeCoordinates) {
+  if (!routeCoordinates || routeCoordinates.length < 2) {
+    return 0;
+  }
+
+  let totalDistance = 0;
+  let accumulatedDistance = 0;
+  let closestSegmentIndex = -1;
+  let minDistance = Infinity;
+
+  // 計算總距離和找到最近線段
+  for (let i = 0; i < routeCoordinates.length - 1; i++) {
+    const segmentDistance = haversineMeters(
+      routeCoordinates[i],
+      routeCoordinates[i + 1],
+    );
+    totalDistance += segmentDistance;
+
+    const distanceToSegment = distanceToLineSegment(
+      currentPosition,
+      routeCoordinates[i],
+      routeCoordinates[i + 1],
+    );
+
+    if (distanceToSegment < minDistance) {
+      minDistance = distanceToSegment;
+      closestSegmentIndex = i;
+    }
+  }
+
+  // 計算到最近線段起點的累積距離
+  for (let i = 0; i < closestSegmentIndex; i++) {
+    accumulatedDistance += haversineMeters(
+      routeCoordinates[i],
+      routeCoordinates[i + 1],
+    );
+  }
+
+  const progress = (accumulatedDistance / totalDistance) * 100;
+  return Math.max(0, Math.min(100, progress));
+}

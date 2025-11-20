@@ -112,7 +112,6 @@ async function sendMessage() {
   addMessage(message, true);
   chatInput.value = "";
 
-  // ✅ 新增：顯示正在輸入的指示器
   const typingIndicator = addTypingIndicator();
 
   try {
@@ -125,11 +124,9 @@ async function sendMessage() {
     const data = await res.json();
     console.log("AI 回傳:", data);
 
-    // ✅ 移除正在輸入指示器
     removeTypingIndicator(typingIndicator);
 
     if (data.found && data.lat && data.lon) {
-      // 成功找到地點 → 飛過去 + 加藍色大 ♿
       const lat = parseFloat(data.lat);
       const lon = parseFloat(data.lon);
 
@@ -167,7 +164,6 @@ async function sendMessage() {
   }
 }
 
-// ✅ 新增：顯示正在輸入的指示器
 function addTypingIndicator() {
   const div = document.createElement("div");
   div.id = "typing-indicator";
@@ -320,14 +316,14 @@ async function drawRoute() {
   routeDetails.innerHTML =
     '<div style="text-align: center;">規劃路線中...</div>';
 
-  const startValue = document.getElementById("start").value;
-  const endValue = document.getElementById("end").value;
+  let startValue = document.getElementById("start").value;
+  let endValue = document.getElementById("end").value;
 
   console.log("📍 規劃路線從:", startValue, "到:", endValue);
 
   try {
     const [slon, slat] = startValue.split(",").map(Number);
-    const [elon, elat] = endValue.split(",").map(Number);
+    let [elon, elat] = endValue.split(",").map(Number);
 
     if (isNaN(slon) || isNaN(slat) || isNaN(elon) || isNaN(elat)) {
       throw new Error("無效的座標格式，請使用 經度,緯度 格式");
@@ -335,6 +331,7 @@ async function drawRoute() {
 
     let mode = "normal"; // 預設為一般模式
     let rampPoint = null;
+    let originalEnd = [elon, elat]; // 保存原始終點
 
     // 檢查坡道資料是否已載入
     if (ramps.length === 0) {
@@ -347,16 +344,27 @@ async function drawRoute() {
 
     console.log(`📍 最近坡道距離: ${distance.toFixed(1)} 公尺`);
 
-    // ✅ 修正：明確設定 mode
+    // ✅ 修正：真正重新導向終點到坡道位置
     if (ramp && distance < 100) {
       console.log("♿ 終點附近有坡道 → 啟動無障礙路線模式");
       mode = "accessible";
+
+      // ✅ 重要：將終點座標改為坡道位置
+      elon = ramp.lon;
+      elat = ramp.lat;
+
+      // 更新輸入框中的終點座標
+      document.getElementById("end").value = `${elon},${elat}`;
+
       rampPoint = {
         lon: ramp.lon,
         lat: ramp.lat,
         name: ramp.name,
+        original_end: originalEnd, // 保存原始終點用於顯示
       };
+
       console.log("➡️ 無障礙入口：", rampPoint);
+      console.log("🎯 終點已重新導向至坡道位置");
     } else {
       console.log("🚶‍♂️ 終點沒有坡道 → 使用一般導航模式");
       mode = "normal";
@@ -366,9 +374,10 @@ async function drawRoute() {
     // 呼叫後端
     const body = {
       start: [slon, slat],
-      end: [elon, elat],
+      end: [elon, elat], // 使用可能被修改的終點座標
       mode: mode,
       ramp: rampPoint,
+      original_end: originalEnd, // 傳送原始終點給後端
     };
 
     console.log("📤 傳送到後端:", body);
@@ -394,12 +403,12 @@ async function drawRoute() {
     drawRoutesOnMap(routeData);
 
     // 顯示路線資訊
-    displayRouteInfo(routeData);
+    displayRouteInfo(routeData, originalEnd, rampPoint);
   } catch (e) {
     console.error("❌ 路線規劃失敗:", e);
     routeDetails.innerHTML = `
       <div style="color: #dc3545; text-align: center;">
-        ❌ 路線規劃失敗<br>
+        路線規劃失敗<br>
         <small>${e.message}</small>
       </div>
     `;
@@ -474,8 +483,8 @@ function drawRoutesOnMap(routeData) {
                 障礙點: ${accessibility.barrier_count} 個<br>
                 <small>${
                   accessibility.suitable_for_wheelchair
-                    ? "✅ 適合輪椅"
-                    : "⚠️ 可能有障礙"
+                    ? "適合輪椅"
+                    : "可能有障礙"
                 }</small>
               </div>
             `;
@@ -560,10 +569,20 @@ function drawRoutesOnMap(routeData) {
   }
 }
 
-function displayRouteInfo(routeData) {
+// 顯示路線資訊 - 支援新舊兩種格式
+function displayRouteInfo(routeData, originalEnd = null, rampPoint = null) {
   console.log("📊 顯示路線資訊:", routeData);
 
   const isNewFormat = routeData.normal !== undefined;
+
+  let redirectInfo = "";
+  if (rampPoint && originalEnd) {
+    redirectInfo = `
+      <div class="route-redirect-info">
+        <small>終點已導向至無障礙入口：${rampPoint.name}</small>
+      </div>
+    `;
+  }
 
   if (isNewFormat) {
     let normalHTML = "";
@@ -627,14 +646,14 @@ function displayRouteInfo(routeData) {
       `;
     }
 
-    // ✅ 修正：正確顯示警告訊息
     const warningHTML = routeData.has_accessible_alternative
-      ? '<div class="route-success">✅ 已找到無障礙替代路線</div>'
-      : '<div class="route-warning">⚠️ 無法找到無障礙替代路線</div>';
+      ? '<div class="route-success">已找到無障礙替代路線</div>'
+      : '<div class="route-warning">無法找到無障礙替代路線</div>';
 
     document.getElementById("routeDetails").innerHTML = `
       <div class="route-selection">
         <div class="route-selection-title">選擇路線類型：</div>
+        ${redirectInfo}
         ${accessibleHTML}
         ${normalHTML}
         ${warningHTML}
@@ -651,6 +670,7 @@ function displayRouteInfo(routeData) {
       document.getElementById("routeDetails").innerHTML = `
         <div class="route-selection">
           <div class="route-selection-title">路線資訊：</div>
+          ${redirectInfo}
           <div class="route-option active">
             <div class="route-header">
               <span class="route-icon">🗺️</span>
@@ -670,6 +690,7 @@ function displayRouteInfo(routeData) {
       `;
     }
   }
+
   showNavigationButton(routeData);
 }
 
@@ -767,12 +788,10 @@ function clearAll() {
 function bindEvents() {
   document.getElementById("routeBtn").addEventListener("click", drawRoute);
   document.getElementById("clearBtn").addEventListener("click", clearAll);
+  document.getElementById("backBtn").addEventListener("click", function () {
+    window.location.href = "main.html";
+  });
 }
-
-// 返回主頁按鈕事件
-document.getElementById("backBtn").addEventListener("click", function () {
-  window.location.href = "main.html";
-});
 
 // ==================== 前端導航功能實作 =====================
 // 導航相關全域變數
@@ -828,6 +847,7 @@ function showNavigationButton(routeData) {
   // 移除舊的導航按鈕（如果存在）
   const oldButton = document.getElementById("startNavigationBtn");
   if (oldButton) {
+    oldButton.removeEventListener("click", startNavigationHandler); // 移除舊的事件監聽器
     oldButton.remove();
   }
 
@@ -842,12 +862,15 @@ function showNavigationButton(routeData) {
   `;
   routeDetails.appendChild(navButton);
 
+  // 使用命名函數以便後續移除
+  function startNavigationHandler() {
+    startNavigation(routeData);
+  }
+
   // 綁定開始導航事件
   document
     .getElementById("startNavigationBtn")
-    .addEventListener("click", () => {
-      startNavigation(routeData);
-    });
+    .addEventListener("click", startNavigationHandler);
 }
 
 // 開始導航 - 呼叫後端API獲取詳細導航步驟
