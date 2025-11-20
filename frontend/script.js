@@ -218,8 +218,8 @@ document.addEventListener("DOMContentLoaded", function () {
   initSidebar();
   initMapClick();
   bindEvents();
+  initNavigation();
 
-  // ✅ 修改聊天按鈕事件監聽器
   document
     .getElementById("chat-toggle-btn")
     .addEventListener("click", function () {
@@ -769,17 +769,372 @@ function bindEvents() {
   document.getElementById("clearBtn").addEventListener("click", clearAll);
 }
 
-// 初始化
-document.addEventListener("DOMContentLoaded", function () {
-  initMap();
-  initSidebar();
-  initMapClick();
-  bindEvents();
-
-  console.log("花蓮無障礙坡道路線規劃系統已啟動");
-});
-
 // 返回主頁按鈕事件
 document.getElementById("backBtn").addEventListener("click", function () {
   window.location.href = "main.html";
 });
+
+// ==================== 前端導航功能實作 =====================
+// 導航相關全域變數
+let navigationData = null;
+let currentStep = 0;
+let isNavigating = false;
+let userLocationMarker = null;
+let watchId = null;
+
+// 初始化導航功能
+function initNavigation() {
+  bindNavigationEvents();
+}
+
+// 綁定導航事件
+function bindNavigationEvents() {
+  document.getElementById("nextStepBtn").addEventListener("click", () => {
+    if (!isNavigating) return;
+
+    if (currentStep < navigationData.steps.length - 1) {
+      currentStep++;
+      updateNavigationDisplay();
+    } else {
+      // 完成導航
+      alert("🎉 您已到達目的地！");
+      stopNavigation();
+    }
+  });
+
+  document.getElementById("prevStepBtn").addEventListener("click", () => {
+    if (!isNavigating) return;
+
+    if (currentStep > 0) {
+      currentStep--;
+      updateNavigationDisplay();
+    }
+  });
+
+  document.getElementById("exitNavBtn").addEventListener("click", () => {
+    if (isNavigating) {
+      const confirmStop = confirm("確定要結束導航嗎？");
+      if (confirmStop) {
+        stopNavigation();
+      }
+    }
+  });
+}
+
+// 顯示導航按鈕（在路線規劃完成後）
+function showNavigationButton(routeData) {
+  const routeDetails = document.getElementById("routeDetails");
+
+  // 移除舊的導航按鈕（如果存在）
+  const oldButton = document.getElementById("startNavigationBtn");
+  if (oldButton) {
+    oldButton.remove();
+  }
+
+  // 添加新的導航按鈕
+  const navButton = document.createElement("div");
+  navButton.innerHTML = `
+    <div style="text-align: center; margin-top: 15px;">
+      <button class="btn-primary" id="startNavigationBtn" style="background: #28a745;">
+        🧭 開始導航
+      </button>
+    </div>
+  `;
+  routeDetails.appendChild(navButton);
+
+  // 綁定開始導航事件
+  document
+    .getElementById("startNavigationBtn")
+    .addEventListener("click", () => {
+      startNavigation(routeData);
+    });
+}
+
+// 開始導航 - 呼叫後端API獲取詳細導航步驟
+async function startNavigation(routeData) {
+  try {
+    const startValue = document.getElementById("start").value;
+    const endValue = document.getElementById("end").value;
+
+    const [slon, slat] = startValue.split(",").map(Number);
+    const [elon, elat] = endValue.split(",").map(Number);
+
+    // ✅ 呼叫後端獲取詳細導航步驟
+    const response = await fetch("http://localhost:3000/api/navigation/start", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        start: [slon, slat],
+        end: [elon, elat],
+        route_type: currentRouteType,
+        route_data: routeData,
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error("導航服務暫時無法使用");
+    }
+
+    navigationData = await response.json();
+
+    // 開始導航流程
+    isNavigating = true;
+    currentStep = 0;
+
+    // 顯示導航控制面板
+    document.getElementById("navigationControls").style.display = "block";
+    document.getElementById("startNavigationBtn").style.display = "none";
+
+    // 開始GPS追蹤
+    startGPSTracking();
+
+    // 更新導航顯示
+    updateNavigationDisplay();
+
+    console.log("🧭 導航開始", navigationData);
+  } catch (error) {
+    console.error("開始導航失敗:", error);
+    alert("導航服務暫時無法使用，請稍後再試");
+  }
+}
+
+// 更新導航顯示
+function updateNavigationDisplay() {
+  if (!navigationData || !isNavigating) return;
+
+  const currentStepData = navigationData.steps[currentStep];
+  const nextInstruction = document.getElementById("nextInstruction");
+  const distanceToNext = document.getElementById("distanceToNext");
+  const progressText = document.getElementById("progressText");
+  const progressFill = document.getElementById("progressFill");
+
+  // 更新指令和距離
+  nextInstruction.textContent = currentStepData.instruction;
+  distanceToNext.textContent =
+    currentStepData.distance > 0
+      ? `還有 ${currentStepData.distance} 公尺`
+      : "即將到達";
+
+  // 更新進度條
+  const progress = ((currentStep + 1) / navigationData.steps.length) * 100;
+  progressText.textContent = `${Math.round(progress)}% 完成`;
+  progressFill.style.width = `${progress}%`;
+
+  // 更新按鈕狀態
+  document.getElementById("prevStepBtn").disabled = currentStep === 0;
+  document.getElementById("nextStepBtn").textContent =
+    currentStep === navigationData.steps.length - 1 ? "完成導航" : "下一步 ➡️";
+
+  // 語音提示
+  speakNavigation(currentStepData.instruction);
+}
+
+// GPS 位置追蹤
+function startGPSTracking() {
+  if ("geolocation" in navigator) {
+    watchId = navigator.geolocation.watchPosition(
+      async (position) => {
+        const lat = position.coords.latitude;
+        const lng = position.coords.longitude;
+        const accuracy = position.coords.accuracy;
+
+        // 更新使用者位置標記
+        updateUserPosition(lat, lng, accuracy);
+
+        // ✅ 呼叫後端檢查位置和更新導航
+        if (isNavigating) {
+          await checkPositionWithBackend(lat, lng);
+        }
+      },
+      (error) => {
+        console.error("GPS 錯誤:", error);
+        speakNavigation("GPS信號不穩定");
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 5000,
+      },
+    );
+  } else {
+    alert("您的裝置不支援GPS定位");
+  }
+}
+
+// 更新使用者位置標記
+function updateUserPosition(lat, lng, accuracy) {
+  if (!userLocationMarker) {
+    userLocationMarker = L.marker([lat, lng], {
+      icon: L.divIcon({
+        className: "user-location-marker",
+        html: "📍",
+        iconSize: [30, 30],
+      }),
+    }).addTo(map);
+
+    // 添加精度圓圈
+    L.circle([lat, lng], {
+      radius: accuracy,
+      color: "blue",
+      fillColor: "#007aff",
+      fillOpacity: 0.1,
+    }).addTo(map);
+  } else {
+    userLocationMarker.setLatLng([lat, lng]);
+  }
+}
+
+// ✅ 呼叫後端檢查位置
+async function checkPositionWithBackend(lat, lng) {
+  try {
+    const response = await fetch(
+      "http://localhost:3000/api/navigation/position",
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          current_position: [lng, lat],
+          current_step: currentStep,
+          navigation_id: navigationData.navigation_id,
+        }),
+      },
+    );
+
+    if (response.ok) {
+      const positionData = await response.json();
+
+      // 處理後端回傳的導航更新
+      handleNavigationUpdate(positionData);
+    }
+  } catch (error) {
+    console.error("位置檢查失敗:", error);
+  }
+}
+
+// 處理後端回傳的導航更新
+function handleNavigationUpdate(positionData) {
+  if (positionData.step_completed) {
+    // 步驟完成，自動下一步
+    if (currentStep < navigationData.steps.length - 1) {
+      currentStep++;
+      updateNavigationDisplay();
+    } else {
+      completeNavigation();
+    }
+  }
+
+  if (positionData.off_route) {
+    // 偏離路線，重新規劃
+    handleOffRoute(positionData);
+  }
+
+  if (positionData.next_instruction) {
+    // 更新下一個指令
+    document.getElementById("nextInstruction").textContent =
+      positionData.next_instruction;
+  }
+}
+
+// 語音提示
+function speakNavigation(instruction) {
+  if ("speechSynthesis" in window) {
+    // 停止之前的語音
+    speechSynthesis.cancel();
+
+    const utterance = new SpeechSynthesisUtterance(instruction);
+    utterance.lang = "zh-TW";
+    utterance.rate = 0.9; // 稍微放慢速度
+    utterance.volume = 0.8;
+    utterance.pitch = 1;
+
+    utterance.onerror = function (event) {
+      console.error("語音合成錯誤:", event);
+    };
+
+    speechSynthesis.speak(utterance);
+  }
+}
+
+// 處理偏離路線
+function handleOffRoute(positionData) {
+  speakNavigation("您已偏離路線，正在重新規劃");
+
+  // 顯示重新規劃提示
+  const nextInstruction = document.getElementById("nextInstruction");
+  nextInstruction.textContent = "偏離路線，重新規劃中...";
+  nextInstruction.style.color = "#dc3545";
+
+  // 可以選擇自動重新規劃或等待使用者確認
+  setTimeout(() => {
+    recalculateRoute(positionData.current_position);
+  }, 3000);
+}
+
+// 重新規劃路線
+async function recalculateRoute(currentPosition) {
+  try {
+    const endValue = document.getElementById("end").value;
+    const [elon, elat] = endValue.split(",").map(Number);
+
+    const response = await fetch(
+      "http://localhost:3000/api/navigation/recalculate",
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          current_position: currentPosition,
+          end: [elon, elat],
+          route_type: currentRouteType,
+        }),
+      },
+    );
+
+    if (response.ok) {
+      const newRouteData = await response.json();
+
+      // 更新路線顯示
+      clearRouteLayers();
+      drawRoutesOnMap(newRouteData.route_geometry);
+
+      // 重新開始導航
+      startNavigation(newRouteData);
+
+      speakNavigation("路線重新規劃完成");
+    }
+  } catch (error) {
+    console.error("重新規劃失敗:", error);
+    speakNavigation("重新規劃失敗，請手動操作");
+  }
+}
+
+function completeNavigation() {
+  speakNavigation("恭喜您已到達目的地");
+  alert("🎉 您已到達目的地！");
+  stopNavigation();
+}
+
+function stopNavigation() {
+  isNavigating = false;
+
+  // 停止 GPS 追蹤
+  if (watchId) {
+    navigator.geolocation.clearWatch(watchId);
+    watchId = null;
+  }
+
+  // 停止語音
+  if ("speechSynthesis" in window) {
+    speechSynthesis.cancel();
+  }
+
+  // 隱藏導航控制面板
+  document.getElementById("navigationControls").style.display = "none";
+
+  // 清除使用者位置標記
+  if (userLocationMarker) {
+    map.removeLayer(userLocationMarker);
+    userLocationMarker = null;
+  }
+
+  console.log("🧭 導航結束");
+}

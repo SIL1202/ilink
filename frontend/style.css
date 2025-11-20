@@ -438,3 +438,169 @@ input[type="range"]::-webkit-slider-thumb {
     opacity: 1;
   }
 }
+
+/* ==================== navigation ==================== */
+/* 導航控制樣式 */
+.navigation-controls {
+  background: #f8f9fa;
+  padding: 16px;
+  border-radius: 8px;
+  margin-top: 20px;
+  border-left: 4px solid #28a745;
+}
+
+.navigation-info {
+  text-align: center;
+  margin-bottom: 15px;
+}
+
+.next-instruction {
+  font-size: 18px;
+  font-weight: bold;
+  color: #333;
+  margin-bottom: 8px;
+  min-height: 24px;
+}
+
+.distance-to-next {
+  font-size: 14px;
+  color: #666;
+  margin-bottom: 12px;
+}
+
+.progress-info {
+  margin-top: 10px;
+}
+
+.progress-text {
+  font-size: 12px;
+  color: #666;
+  margin-bottom: 5px;
+}
+
+.progress-bar {
+  width: 100%;
+  height: 6px;
+  background: #e9ecef;
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: #28a745;
+  border-radius: 3px;
+  width: 0%;
+  transition: width 0.3s ease;
+}
+
+.navigation-buttons {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.navigation-buttons button {
+  padding: 10px;
+  font-size: 14px;
+}
+
+#exitNavBtn {
+  grid-column: 1 / -1;
+  background: #dc3545;
+}
+
+#exitNavBtn:hover {
+  background: #c82333;
+}
+
+/* ==================== 路線選擇樣式 ==================== */
+.route-selection {
+  margin-top: 15px;
+}
+
+.route-selection-title {
+  font-weight: bold;
+  margin-bottom: 10px;
+  color: #333;
+}
+
+.route-option {
+  border: 2px solid #e9ecef;
+  border-radius: 8px;
+  padding: 12px;
+  margin-bottom: 10px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.route-option:hover {
+  border-color: #007aff;
+  background: #f8f9fa;
+}
+
+.route-option.active {
+  border-color: #28a745;
+  background: #f8fff9;
+}
+
+.route-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.route-icon {
+  font-size: 18px;
+}
+
+.route-title {
+  font-weight: bold;
+  flex: 1;
+}
+
+.badge {
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: bold;
+}
+
+.badge.success {
+  background: #d4edda;
+  color: #155724;
+}
+
+.badge.warning {
+  background: #fff3cd;
+  color: #856404;
+}
+
+.route-details {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  color: #666;
+}
+
+.route-success {
+  background: #d4edda;
+  color: #155724;
+  padding: 10px;
+  border-radius: 6px;
+  text-align: center;
+  margin-top: 10px;
+  font-size: 14px;
+}
+
+.route-warning {
+  background: #fff3cd;
+  color: #856404;
+  padding: 10px;
+  border-radius: 6px;
+  text-align: center;
+  margin-top: 10px;
+  font-size: 14px;
+}

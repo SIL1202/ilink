@@ -53,6 +53,34 @@
         <div id="routeDetails">載入中...</div>
       </div>
 
+      <!-- 導航 -->
+      <div
+        class="navigation-controls"
+        id="navigationControls"
+        style="display: none"
+      >
+        <div class="section">
+          <div class="section-title">🧭 導航模式</div>
+          <div class="navigation-info">
+            <div id="nextInstruction" class="next-instruction">
+              準備開始導航
+            </div>
+            <div id="distanceToNext" class="distance-to-next">-- 公尺</div>
+            <div id="progressInfo" class="progress-info">
+              <span id="progressText">0% 完成</span>
+              <div class="progress-bar">
+                <div id="progressFill" class="progress-fill"></div>
+              </div>
+            </div>
+          </div>
+          <div class="navigation-buttons">
+            <button class="btn-secondary" id="prevStepBtn">⬅️ 上一步</button>
+            <button class="btn-primary" id="nextStepBtn">下一步 ➡️</button>
+            <button class="btn-secondary" id="exitNavBtn">❌ 結束導航</button>
+          </div>
+        </div>
+      </div>
+    </div>
 
     <button class="toggle-sidebar" id="toggleSidebar">☰</button>
 
