@@ -64,6 +64,7 @@ button:hover {
 .content {
     padding: 15px;
     border: 3px solid #eee;
+    background-color: rgb(97, 195, 222);
     border-top: none;
     text-align: justify;
     display: none;
