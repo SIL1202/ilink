@@ -6,13 +6,13 @@ button {
     border-radius: 6px;
     font-size: 30px;
     cursor: pointer;
-    background-color: #007aff;
-    color: white;
+    background-color: white;
+    color: black;
     transition: background 0.2s;
 }
 
 button:hover {
-    background-color: #0056cc;
+    background-color: #ffffbb;
 }
 
 .back-button {

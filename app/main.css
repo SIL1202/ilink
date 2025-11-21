@@ -3,8 +3,6 @@ div {
     box-sizing: border-box;
 }
 
-/* main.css contain: */
-
 /* banner 圖片 */
 .banner {
     width: px;
@@ -19,25 +17,32 @@ div {
     padding: 10px;
     width: 100%;
     height: 150px;
-    border: 1px solid #ccc;
     margin-top: 10px;
+    color: white;
     overflow-y: auto; /* 超過高度出現捲軸 */
 }
 
-/* 按鈕統一樣式 */
+/* 按鈕區 */
+.btn-box {
+    display: flex;
+    align-items: center;     /* 置中 */
+    flex-direction: column; /* 按鈕縱向排列 */
+    margin-left: -550px; /* 調整按鈕位置 */
+}
+
 button {
-    width: 100%;
+    width: 400%;
     padding: 12px;
-    margin-top: 40px;
+    margin-bottom: 40px;
     border: none;
     border-radius: 6px;
     font-size: 30px;
     cursor: pointer;
-    background-color: #007aff;
-    color: white;
+    background-color: white;
+    color: black;
     transition: background 0.2s;
 }
 
 button:hover {
-    background-color: #0056cc;
+    background-color: #ffffBB;
 }
