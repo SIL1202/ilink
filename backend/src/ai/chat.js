@@ -82,7 +82,7 @@ async function handleNLQ(message, res) {
     place: matched.name,
     lat: matched.lat,
     lon: matched.lon,
-    reply: `🗺️ 已找到「${matched.name}」，已為您標記在地圖上！要規劃到這裡的路線嗎？`,
+    reply: `找到「${matched.name}」，已為您標記在地圖上！要規劃到這裡的路線嗎？`,
     suggestions: ["規劃路線到此", "查看附近設施", "列出所有坡道"],
   });
 }
@@ -99,7 +99,7 @@ async function handleReportRequest(message, res) {
       const dailyReport = await analyticsService.generateDailyReport();
       return res.json({
         type: "daily_report",
-        reply: `📊 今日無障礙路線使用報告：\n\n${dailyReport.summary}`,
+        reply: `今日無障礙路線使用報告：\n\n${dailyReport.summary}`,
         data: dailyReport,
         suggestions: ["每週報告", "列出所有坡道", "規劃路線"],
       });
@@ -108,7 +108,7 @@ async function handleReportRequest(message, res) {
       return res.json({
         type: "report",
         reply:
-          "📈 週報功能開發中，目前提供每日報告。您可以詢問「今日報告」來查看當天使用統計。",
+          "週報功能開發中，目前提供每日報告。您可以詢問「今日報告」來查看當天使用統計。",
         suggestions: ["今日報告", "列出所有坡道", "使用統計"],
       });
 
@@ -116,7 +116,7 @@ async function handleReportRequest(message, res) {
       const defaultReport = await analyticsService.generateDailyReport();
       return res.json({
         type: "report",
-        reply: `📈 無障礙路線分析：\n${defaultReport.summary}`,
+        reply: `無障礙路線分析：\n${defaultReport.summary}`,
         data: defaultReport.statistics,
         suggestions: ["詳細報告", "列出所有坡道", "熱門地點"],
       });
@@ -147,7 +147,7 @@ async function listAllRamps(res) {
   if (!ramps || ramps.length === 0) {
     return res.json({
       type: "list_facilities",
-      reply: "❌ 目前系統中還沒有坡道資料。",
+      reply: "目前系統中還沒有坡道資料。",
       suggestions: ["重新載入資料", "聯絡管理員", "使用說明"],
     });
   }
@@ -160,7 +160,7 @@ async function listAllRamps(res) {
     )
     .join("\n");
 
-  const reply = `🗺️ 目前地圖上標示的無障礙坡道共有 ${ramps.length} 個：\n\n${rampList}\n\n💡 提示：地圖上會高亮顯示所有坡道位置，您可以點擊標記查看詳細資訊或直接規劃路線。`;
+  const reply = `目前地圖上標示的無障礙坡道共有 ${ramps.length} 個：\n\n${rampList}\n\n💡 提示：地圖上會高亮顯示所有坡道位置，您可以點擊標記查看詳細資訊或直接規劃路線。`;
 
   return res.json({
     type: "list_facilities",
@@ -177,7 +177,7 @@ async function listAllRamps(res) {
 async function listAccessibilityFacilities(res) {
   // 這裡可以擴展到其他無障礙設施
   const reply =
-    "🛠️ 目前主要提供無障礙坡道資訊。未來將擴充更多無障礙設施資料，如電梯、無障礙廁所、輪椅充電站等。";
+    "目前主要提供無障礙坡道資訊。未來將擴充更多無障礙設施資料，如電梯、無障礙廁所、輪椅充電站等。";
 
   return res.json({
     type: "list_facilities",
@@ -234,7 +234,7 @@ async function handleGeneralQuestion(message, res) {
     return res.json({
       type: "general_question",
       reply:
-        "🤖 我主要協助無障礙路線規劃，您可以問我關於坡道位置、路線規劃、使用統計等問題。需要什麼幫助呢？",
+        "我主要協助無障礙路線規劃，您可以問我關於坡道位置、路線規劃、使用統計等問題。需要什麼幫助呢？",
       suggestions: ["列出所有坡道", "規劃路線", "今日報告", "使用說明"],
     });
   }
@@ -243,36 +243,36 @@ async function handleGeneralQuestion(message, res) {
 // 檢查系統知識庫問題
 async function checkSystemKnowledge(message) {
   const knowledgeMap = {
-    如何使用: `📖 使用說明：
-1. 🗺️ 點擊地圖設定起點和終點
-2. 🧭 點擊「規劃路線」規劃無障礙路線
-3. 💬 使用聊天功能查詢地點或取得報告
-4. 🔊 點擊「開始導航」跟隨語音指引
-5. 📋 說「列出所有坡道」查看所有地點`,
+    如何使用: `使用說明：
+1. 點擊地圖設定起點和終點
+2. 點擊「規劃路線」規劃無障礙路線
+3. 使用聊天功能查詢地點或取得報告
+4. 點擊「開始導航」跟隨語音指引
+5. 說「列出所有坡道」查看所有地點`,
 
-    功能說明: `🛠️ 系統功能：
-• 🗺️ 無障礙路線規劃（自動避開階梯）
-• 🔍 自然語言查詢地點（說出想去的地方）
-• 🧭 即時語音導航指引
-• 📊 使用統計報告分析
-• 📋 坡道位置查詢與列表
-• 💬 智能對話協助`,
+    功能說明: `系統功能：
+• 無障礙路線規劃（自動避開階梯）
+• 自然語言查詢地點（說出想去的地方）
+• 即時語音導航指引
+• 使用統計報告分析
+• 坡道位置查詢與列表
+• 智能對話協助`,
 
-    有哪些功能: `🌟 主要功能：
-🗺️ 路線規劃 - 規劃無障礙路線，避開障礙
-🔍 地點查詢 - 用自然語言找地點
-🧭 即時導航 - 語音導航指引
-📊 使用報告 - 統計分析報告
-📋 坡道列表 - 查看所有無障礙坡道
-💬 智能對話 - 隨時詢問問題`,
+    有哪些功能: `主要功能：
+路線規劃 - 規劃無障礙路線，避開障礙
+地點查詢 - 用自然語言找地點
+即時導航 - 語音導航指引
+使用報告 - 統計分析報告
+坡道列表 - 查看所有無障礙坡道
+智能對話 - 隨時詢問問題`,
 
-    幫助: `🆘 需要什麼幫助？
-• 🔍 找地點：直接告訴我您想去哪裡
-• 🗺️ 規劃路線：點擊地圖設定起終點
-• 📋 查看坡道：說「列出所有坡道」
-• 📊 取得報告：說「今日報告」
-• 🧭 導航：規劃路線後點擊開始導航
-• ❓ 使用說明：說「如何使用」`,
+    幫助: `需要什麼幫助？
+• 找地點：直接告訴我您想去哪裡
+• 規劃路線：點擊地圖設定起終點
+  查看坡道：說「列出所有坡道」
+• 取得報告：說「今日報告」
+• 導航：規劃路線後點擊開始導航
+• 使用說明：說「如何使用」`,
 
     你好: `👋 您好！我是 WheelWay AI 助手，專門協助無障礙路線規劃。
 
@@ -284,11 +284,11 @@ async function checkSystemKnowledge(message) {
 
 請告訴我您需要什麼幫助！`,
 
-    謝謝: `🙏 不客氣！很高興能幫助您。
+    謝謝: `不客氣！很高興能幫助您。
 
-如果有任何其他問題，隨時告訴我。祝您行程順利！♿`,
+如果有任何其他問題，隨時告訴我。祝您行程順利！`,
 
-    哈囉: `👋 哈囉！我是您的無障礙路線助手。
+    哈囉: `哈囉！我是您的無障礙路線助手。
 
 需要找地點、規劃路線，還是查看坡道資訊呢？請儘管告訴我！`,
   };
