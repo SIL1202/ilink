@@ -8,20 +8,46 @@
 <body style="background-color: #003c9d;">
 
     <div class="main"></div>
-        <!-- banner -->
-        <div class="banner"></div>
 
-        <!-- 文字內容區 -->
-        <div class="contain">
-            WheelWay 讓您的每一次外出都更輕鬆安心！整合 AI、即時路況與無障礙資訊，智慧規劃最安全、
-            最順暢的友善路線；遇到障礙也能一鍵通報、立即協助。用科技為行動自由加速，打造真正友善的城市移動體驗。
-        </div>
+    <!-- banner -->
+    <div class="banner"></div>
 
-        <!-- 按鈕區 -->
-        <div class="btn-box">
-            <a href="index.html"><button>🧭    我要導航</button></a>
-            <a href="index.html"><button>💬    操作Q&A</button></a>
-            <a href="appeal.html"><button>📝    我要申訴</button></a>
+    <!-- 文字內容區 -->
+    <div class="contain">
+        WheelWay 讓您的每一次外出都更輕鬆安心！整合 AI、即時路況與無障礙資訊，智慧規劃最安全、
+        最順暢的友善路線；遇到障礙也能一鍵通報、立即協助。用科技為行動自由加速，打造真正友善的城市移動體驗。
+    </div>
+
+    <!-- 按鈕區 -->
+    <div class="btn-box">
+        <a href="index.html"><button>🧭    我要導航</button></a>
+        <a href="appeal.html"><button>📝    我要申訴</button></a>
+        
+    </div>
+
+    <div class="botton-box">
+        <button onclick= "toggleForm('chatbotFrame')">💬 操作Q&A</button> 
+
+        <div class=iframe-container>
+        <iframe
+            id="chatbotFrame"
+            src="http://localhost:8080/chatbot/fYvnzL19SrZIOx4s"
+            style="width: 53%; height: 100%; min-height: 700px; display: none;"
+            frameborder="0"
+            allow="microphone">
+        </iframe>
         </div>
+    </div>
+
+    <script>
+    function toggleForm(formId) {
+        const form = document.getElementById(formId);
+        if (form.style.display === 'none' || form.style.display === '') {
+            form.style.display = 'block'; // 顯示
+        } else {
+            form.style.display = 'none'; // 隱藏
+        }
+    }
+    </script>
 </body>
 </html>

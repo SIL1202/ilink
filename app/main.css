@@ -22,16 +22,9 @@ div {
     overflow-y: auto; /* 超過高度出現捲軸 */
 }
 
-/* 按鈕區 */
-.btn-box {
-    display: flex;
-    align-items: center;     /* 置中 */
-    flex-direction: column; /* 按鈕縱向排列 */
-    margin-left: -550px; /* 調整按鈕位置 */
-}
 
 button {
-    width: 400%;
+    width: 100%;
     padding: 12px;
     margin-bottom: 40px;
     border: none;
@@ -45,4 +38,12 @@ button {
 
 button:hover {
     background-color: #ffffBB;
+}
+
+/* 設置父容器為 flex 容器 */
+.iframe-container {
+    display: flex;
+    justify-content: center;  /* 水平居中 */
+    align-items: center;      /* 垂直居中 */
+    margin-left: 40px; /* 調整按鈕位置 */
 }
