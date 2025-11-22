@@ -2,6 +2,8 @@
 import { calculateRouteDistance, haversineMeters } from "../utils/geo.js";
 import fs from "fs";
 import path from "path";
+// 在 calculateRoute 函式中整合即時資料
+import { realtimeDataService } from "../services/realtime-data-service.js";
 
 async function getFallbackResponse(start, end) {
   const fallbackRoute = await getFallbackRoute(start, end);
@@ -30,6 +32,12 @@ export async function calculateRoute(start, end, options = {}) {
   try {
     // 計算一般路線
     const normalRoute = await getOSRMRoute(start, end);
+
+    // 取得即時資料上下文
+    const realtimeContext = await realtimeDataService.getRealtimeContext(
+      normalRoute.routes[0].geometry.coordinates,
+      { userType: "wheelchair" },
+    );
 
     let accessibleRoute = null;
     let hasAccessibleAlternative = false;
@@ -62,14 +70,16 @@ export async function calculateRoute(start, end, options = {}) {
       normal: formatSimpleRoute(normalRoute),
       accessible: accessibleRoute,
       has_accessible_alternative: hasAccessibleAlternative,
+      realtime_context: realtimeContext, // 新增即時資料
       metadata: {
         normal_destination: end,
         accessible_destination: accessible_end || end,
+        weather: realtimeContext.weather,
+        traffic: realtimeContext.traffic,
       },
     };
   } catch (error) {
     console.error("路線計算失敗:", error);
-    // 返回降級方案
     return getFallbackResponse(start, end);
   }
 }

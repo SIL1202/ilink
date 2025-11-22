@@ -65,6 +65,11 @@ async function drawRoute() {
     const [slon, slat] = startValue.split(",").map(Number);
     let [elon, elat] = endValue.split(",").map(Number);
 
+    const routeData = await resonse.json();
+    console.log("後端回傳路線資料:", routeData);
+
+    window.currentRoute = routeData;
+
     if (isNaN(slon) || isNaN(slat) || isNaN(elon) || isNaN(elat)) {
       throw new Error("無效的座標格式，請使用 經度,緯度 格式");
     }
@@ -157,6 +162,103 @@ async function drawRoute() {
       </div>
     `;
   }
+}
+
+// 解釋當前路線
+async function explainCurrentRoute() {
+  if (!window.currentRoute) {
+    addMessage("請先規劃一條路線，我可以為您分析無障礙特性。", false);
+    return;
+  }
+
+  const typingIndicator = addTypingIndicator();
+
+  try {
+    const res = await fetch("http://localhost:3000/api/chat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        message: "解釋這條路線為什麼適合輪椅通行",
+        userContext: {
+          userType: "wheelchair",
+          currentRoute: window.currentRoute,
+        },
+      }),
+    });
+
+    const data = await res.json();
+    removeTypingIndicator(typingIndicator);
+
+    if (data.type === "explain_route") {
+      addMessage(data.reply, false);
+
+      // 顯示詳細分析（可選）
+      if (data.analysis) {
+        showRouteAnalysisDetails(data.analysis);
+      }
+    }
+  } catch (error) {
+    removeTypingIndicator(typingIndicator);
+    console.error("路線解釋失敗:", error);
+    addMessage("抱歉，無法分析路線。請稍後再試。", false);
+  }
+}
+
+// 顯示詳細路線分析
+function showRouteAnalysisDetails(analysis) {
+  const details = `
+<div class="route-analysis-details">
+  <h4>路線詳細分析</h4>
+  <div class="suitability ${analysis.suitability}">
+    適合度: ${getSuitabilityText(analysis.suitability)}
+  </div>
+  
+  ${
+    analysis.features.length > 0
+      ? `
+  <div class="features">
+    <strong>優點：</strong>
+    <ul>
+      ${analysis.features.map((f) => `<li>${f.description}</li>`).join("")}
+    </ul>
+  </div>
+  `
+      : ""
+  }
+  
+  ${
+    analysis.barriers.length > 0
+      ? `
+  <div class="barriers">
+    <strong>注意：</strong>
+    <ul>
+      ${analysis.barriers.map((b) => `<li>${b.description} - ${b.suggestion}</li>`).join("")}
+    </ul>
+  </div>
+  `
+      : ""
+  }
+  
+  <div class="suggestions">
+    <strong>建議：</strong>
+    ${analysis.suggestions.map((s) => `<span class="suggestion-tag">${s}</span>`).join("")}
+  </div>
+</div>
+  `;
+
+  const detailsElement = document.createElement("div");
+  detailsElement.innerHTML = details;
+  chatMessages.appendChild(detailsElement);
+  scrollToBottom();
+}
+
+function getSuitabilityText(suitability) {
+  const textMap = {
+    good: "良好",
+    fair: "普通",
+    poor: "不佳",
+  };
+  return textMap[suitability] || suitability;
 }
 
 // 收集路線分析數據
@@ -401,10 +503,18 @@ async function sendMessage() {
   const typingIndicator = addTypingIndicator();
 
   try {
+    let userLocation = null;
+    if (navigator.geolocation) {
+      userLocation = await getCurrentLocation();
+    }
+
     const res = await fetch("http://localhost:3000/api/chat", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ message: message }),
+      body: JSON.stringify({
+        message: message,
+        userLocation: userLocation,
+      }),
     });
 
     const data = await res.json();
@@ -449,6 +559,33 @@ async function sendMessage() {
     console.error("Chat 錯誤:", err);
     addMessage("⚠️ 連線失敗，請檢查網路", false);
   }
+}
+
+// 取得使用者位置
+function getCurrentLocation() {
+  return new Promise((resolve) => {
+    if (!navigator.geolocation) {
+      resolve(null);
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        resolve({
+          lat: position.coords.latitude,
+          lng: position.coords.longitude,
+        });
+      },
+      () => {
+        resolve(null); // 使用者拒絕或錯誤
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 5000,
+        maximumAge: 300000, // 5分鐘快取
+      },
+    );
+  });
 }
 
 // 處理報告回應
