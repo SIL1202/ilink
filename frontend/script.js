@@ -85,11 +85,9 @@ async function drawRoute() {
 
     console.log(`📍 最近坡道距離: ${distance.toFixed(1)} 公尺`);
 
-    // ✅ 修正：只有無障礙路線才重新導向到坡道
     if (ramp && distance < 100) {
       console.log("♿ 終點附近有坡道 → 啟動無障礙路線模式");
 
-      // ✅ 重要：只有無障礙路線的終點改為坡道位置
       accessibleEnd = [ramp.lon, ramp.lat];
 
       rampPoint = {
@@ -267,11 +265,11 @@ function drawRoutesOnMap(routeData) {
           const destination = routeData.metadata?.accessible_destination;
           const popupContent = `
             <div style="min-width: 220px;">
-              <strong>♿ 無障礙路線</strong><br>
+              <strong>無障礙路線</strong><br>
               距離: ${props.summary.distance.toFixed(0)} 公尺<br>
               時間: ${props.summary.duration} 分鐘<br>
               ${accessibility?.ramp_used ? `坡道: ${accessibility.ramp_used}<br>` : ""}
-              <small>${accessibility?.suitable_for_wheelchair ? "✅ 適合輪椅" : "⚠️ 可能有障礙"}</small>
+              <small>${accessibility?.suitable_for_wheelchair ? "適合輪椅" : "可能有障礙"}</small>
               ${destination ? `<br><small>無障礙入口: [${destination[0].toFixed(6)}, ${destination[1].toFixed(6)}]</small>` : ""}
             </div>
           `;
@@ -462,7 +460,7 @@ function handleReportResponse(data) {
   if (data.data && data.data.statistics) {
     const stats = data.data.statistics;
     const details = `
-📊 詳細統計：
+詳細統計：
 • 規劃次數: ${stats.totalRoutes || 0} 次
 • 無障礙使用率: ${stats.accessibleUsageRate || 0}%
 • 平均距離: ${stats.avgDistance || 0} 公尺
@@ -1120,7 +1118,7 @@ function showNavigationButton(routeData) {
   navButton.innerHTML = `
     <div style="text-align: center; margin-top: 15px;">
       <button class="btn-primary" id="startNavigationBtn" style="background: #28a745;">
-        🧭 開始導航
+        開始導航
       </button>
     </div>
   `;
@@ -1210,7 +1208,7 @@ function updateNavigationDisplay() {
   // 更新按鈕狀態
   document.getElementById("prevStepBtn").disabled = currentStep === 0;
   document.getElementById("nextStepBtn").textContent =
-    currentStep === navigationData.steps.length - 1 ? "完成導航" : "下一步 ➡️";
+    currentStep === navigationData.steps.length - 1 ? "完成導航" : "下一步";
 
   // 語音提示
   speakNavigation(currentStepData.instruction);
