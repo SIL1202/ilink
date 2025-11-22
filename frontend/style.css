@@ -618,3 +618,82 @@ input[type="range"]::-webkit-slider-thumb {
   color: #0066cc;
   font-weight: 500;
 }
+
+/* 聊天建議按鈕樣式 */
+.chat-suggestions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 10px 0;
+  padding: 12px;
+  background: #f8f9fa;
+  border-radius: 12px;
+  border: 1px solid #e9ecef;
+}
+
+.chat-suggestion {
+  background: white;
+  border: 1px solid #dee2e6;
+  border-radius: 20px;
+  padding: 8px 16px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  color: #495057;
+}
+
+.chat-suggestion:hover {
+  background: #007bff;
+  color: white;
+  border-color: #007bff;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 123, 255, 0.2);
+}
+
+/* 報告訊息的特別樣式 */
+.chat-message[data-type="report"] {
+  background: #fff3cd;
+  border-left: 4px solid #ffc107;
+  border-radius: 12px;
+}
+
+.chat-message[data-type="report"] + .chat-message {
+  background: #f8f9fa;
+  border-left: 4px solid #6c757d;
+  font-size: 14px;
+  color: #495057;
+}
+
+/* 坡道高亮標記樣式 */
+.ramp-highlight-marker {
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.1);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+/* 坡道彈出窗按鈕樣式 */
+.ramp-popup-button {
+  background: #28a745;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  margin-top: 8px;
+  width: 100%;
+  transition: background 0.2s;
+}
+
+.ramp-popup-button:hover {
+  background: #218838;
+}

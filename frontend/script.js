@@ -10,6 +10,8 @@ let clickCount = 0;
 let currentRouteType = "accessible"; // 預設顯示無障礙路線
 
 let ramps = [];
+// 在全域變數區域添加
+let highlightedRamps = []; // 儲存高亮的坡道標記
 
 // 初始化地圖
 function initMap() {
@@ -132,6 +134,14 @@ async function drawRoute() {
     const routeData = await response.json();
     console.log("✅ 後端回傳路線資料:", routeData);
 
+    // 收集分析數據
+    await collectRouteAnalytics(routeData, {
+      start: [slon, slat],
+      end: [elon, elat],
+      routeType: mode,
+      userType: "wheelchair", // 可從使用者設定取得
+    });
+
     // 清除舊路線
     clearRouteLayers();
 
@@ -148,6 +158,26 @@ async function drawRoute() {
         <small>${e.message}</small>
       </div>
     `;
+  }
+}
+
+// 收集路線分析數據
+async function collectRouteAnalytics(routeData, userContext) {
+  try {
+    const response = await fetch("http://localhost:3000/api/analytics/route", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        routeData: routeData,
+        userContext: userContext,
+      }),
+    });
+
+    if (response.ok) {
+      console.log("✅ 路線數據記錄成功");
+    }
+  } catch (error) {
+    console.warn("⚠️ 路線數據記錄失敗:", error);
   }
 }
 
@@ -289,6 +319,7 @@ function drawRoutesOnMap(routeData) {
       const group = L.featureGroup(layers);
       const bounds = group.getBounds();
 
+      // 在第 280 行附近修改
       if (bounds.isValid()) {
         map.fitBounds(bounds, {
           padding: [50, 50],
@@ -297,6 +328,10 @@ function drawRoutesOnMap(routeData) {
         console.log("✅ 地圖縮放到路線範圍");
       } else {
         console.warn("⚠️ 無效的邊界，使用預設視圖");
+        // 移除有問題的 showNavigationButton 呼叫
+        // showNavigationButton(routeData); // 這行會導致錯誤
+
+        // 改用安全的方式設定視圖
         const startCoords = document
           .getElementById("start")
           .value.split(",")
@@ -305,7 +340,6 @@ function drawRoutesOnMap(routeData) {
           .getElementById("end")
           .value.split(",")
           .map(Number);
-        showNavigationButton(routeData);
 
         const safeBounds = L.latLngBounds([
           [startCoords[1], startCoords[0]],
@@ -359,7 +393,6 @@ function addMessage(text, isUser = false) {
   scrollToBottom();
 }
 
-// 送出訊息（支援 Enter 鍵）
 async function sendMessage() {
   const message = chatInput.value.trim();
   if (!message) return;
@@ -381,42 +414,279 @@ async function sendMessage() {
 
     removeTypingIndicator(typingIndicator);
 
-    if (data.found && data.lat && data.lon) {
-      const lat = parseFloat(data.lat);
-      const lon = parseFloat(data.lon);
+    // 根據不同回應類型處理
+    switch (data.type) {
+      case "daily_report":
+      case "report":
+        // 處理報告類型的回應
+        handleReportResponse(data);
+        break;
 
-      map.setView([lat, lon], 18);
+      case "list_facilities":
+        // 處理列出設施的回應
+        handleListFacilitiesResponse(data);
+        break;
 
-      // 清除舊的終點標記
-      if (endMarker) map.removeLayer(endMarker);
+      case "general_question":
+        // 處理一般問題回應
+        handleGeneralResponse(data);
+        break;
 
-      // 加一個超顯眼的藍色大 ♿
-      endMarker = L.marker([lat, lon], {
-        icon: L.divIcon({
-          className: "chat-target-marker",
-          html: `<div style="font-size: 40px; text-shadow: 0 0 10px white;">♿</div>`,
-          iconSize: [40, 40],
-          iconAnchor: [20, 40],
-        }),
-      })
-        .addTo(map)
-        .bindPopup(
-          `<strong>${data.place || "目標地點"}</strong><br>AI 帶您來這裡！`,
-        )
-        .openPopup();
+      case "general":
+        // 處理一般問題回應
+        handleGeneralResponse(data);
+        break;
 
-      document.getElementById("end").value = `${lon},${lat}`;
+      case "navigation":
+        // 處理導航相關回應
+        handleNavigationResponse(data);
+        break;
 
-      addMessage(`${data.reply || "已幫您標記在地圖上！"}`, false);
-    } else {
-      addMessage(data.reply || "我還在學習中...請再說一次～", false);
+      default:
+        // 預設處理（保持向後兼容）
+        handleDefaultResponse(data);
     }
   } catch (err) {
     removeTypingIndicator(typingIndicator);
-
     console.error("Chat 錯誤:", err);
     addMessage("⚠️ 連線失敗，請檢查網路", false);
   }
+}
+
+// 處理報告回應
+function handleReportResponse(data) {
+  // 顯示主要報告訊息
+  addMessage(data.reply, false);
+
+  // 如果有詳細統計數據，顯示在第二條訊息
+  if (data.data && data.data.statistics) {
+    const stats = data.data.statistics;
+    const details = `
+📊 詳細統計：
+• 規劃次數: ${stats.totalRoutes || 0} 次
+• 無障礙使用率: ${stats.accessibleUsageRate || 0}%
+• 平均距離: ${stats.avgDistance || 0} 公尺
+• 熱門時段: ${stats.peakHours ? stats.peakHours.join(", ") : "無數據"}
+    `.trim();
+
+    addMessage(details, false);
+  }
+
+  // 顯示建議按鈕
+  if (data.suggestions && data.suggestions.length > 0) {
+    showChatSuggestions(data.suggestions);
+  }
+}
+
+// 處理一般問題回應
+function handleGeneralResponse(data) {
+  addMessage(data.reply, false);
+
+  // 顯示建議按鈕
+  if (data.suggestions && data.suggestions.length > 0) {
+    showChatSuggestions(data.suggestions);
+  }
+}
+
+// 處理導航回應
+function handleNavigationResponse(data) {
+  addMessage(data.reply, false);
+
+  if (data.suggestions && data.suggestions.length > 0) {
+    showChatSuggestions(data.suggestions);
+  }
+}
+
+// 清除坡道高亮標記
+function clearRampHighlights() {
+  highlightedRamps.forEach((marker) => {
+    if (marker && map.hasLayer(marker)) {
+      map.removeLayer(marker);
+    }
+  });
+  highlightedRamps = [];
+  console.log("✅ 已清除坡道高亮標記");
+}
+
+// 完整的 handleListFacilitiesResponse 函式
+function handleListFacilitiesResponse(data) {
+  addMessage(data.reply, false);
+
+  // 清除舊的高亮，然後顯示新的
+  clearRampHighlights();
+
+  // 如果有坡道數據，在地圖上高亮顯示
+  if (data.data && data.data.ramps) {
+    highlightAllRampsOnMap(data.data.ramps);
+  }
+
+  if (data.suggestions && data.suggestions.length > 0) {
+    showChatSuggestions(data.suggestions);
+  }
+}
+
+// 在地圖上高亮顯示所有坡道
+function highlightAllRampsOnMap(ramps) {
+  console.log(`🗺️ 在地圖上高亮顯示 ${ramps.length} 個坡道`);
+
+  ramps.forEach((ramp, index) => {
+    // 創建高亮標記（使用醒目的顏色）
+    const marker = L.marker([ramp.lat, ramp.lon], {
+      icon: L.divIcon({
+        className: "ramp-highlight-marker",
+        html: `
+          <div style="
+            font-size: 24px; 
+            color: #ff6b6b; 
+            text-shadow: 0 0 8px white, 0 0 8px white;
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 3px solid #ff6b6b;
+          ">♿</div>
+        `,
+        iconSize: [40, 40],
+        iconAnchor: [20, 40],
+      }),
+    })
+      .addTo(map)
+      .bindPopup(
+        `
+        <div style="min-width: 200px;">
+          <strong>${ramp.name}</strong><br>
+          <small>座標: [${ramp.lon.toFixed(6)}, ${ramp.lat.toFixed(6)}]</small><br>
+          <button onclick="planToRamp(${ramp.lon}, ${ramp.lat}, '${ramp.name}')" 
+                  style="margin-top: 8px; padding: 5px 10px; background: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer;">
+            規劃到這裡
+          </button>
+        </div>
+      `,
+      )
+      .openPopup(); // 自動打開第一個彈出窗
+
+    highlightedRamps.push(marker);
+  });
+
+  // 自動縮放到顯示所有坡道
+  if (ramps.length > 0) {
+    const group = L.featureGroup(highlightedRamps);
+    const bounds = group.getBounds();
+
+    if (bounds.isValid()) {
+      map.fitBounds(bounds, {
+        padding: [50, 50],
+        maxZoom: 15,
+      });
+    }
+
+    console.log("✅ 地圖已縮放到顯示所有坡道");
+  }
+}
+
+// 規劃到指定坡道的函式
+function planToRamp(lon, lat, name) {
+  // 設定為終點
+  document.getElementById("end").value = `${lon},${lat}`;
+
+  // 顯示提示
+  addMessage(`已設定「${name}」為目的地，點擊「規劃路線」開始規劃！`, false);
+
+  // 自動規劃路線（可選）
+  // drawRoute();
+
+  console.log(`🎯 設定目的地: ${name} [${lon}, ${lat}]`);
+}
+
+// 也可以在清除所有時清除坡道高亮
+function clearAll() {
+  // 清除路線
+  clearRouteLayers();
+
+  // 清除標記（保留坡道標記）
+  markersLayer.clearLayers();
+  startMarker = null;
+  endMarker = null;
+
+  // 清除坡道高亮
+  clearRampHighlights();
+
+  // 清除顯示
+  document.getElementById("routeInfo").style.display = "none";
+  clickCount = 0;
+
+  console.log("🧹 已清除所有標記和高亮");
+}
+
+// 處理預設回應（保持向後兼容）
+function handleDefaultResponse(data) {
+  if (data.found && data.lat && data.lon) {
+    // 地點查詢成功的處理
+    const lat = parseFloat(data.lat);
+    const lon = parseFloat(data.lon);
+
+    map.setView([lat, lon], 18);
+
+    // 清除舊的終點標記
+    if (endMarker) map.removeLayer(endMarker);
+
+    // 加一個超顯眼的藍色大 ♿
+    endMarker = L.marker([lat, lon], {
+      icon: L.divIcon({
+        className: "chat-target-marker",
+        html: `<div style="font-size: 40px; text-shadow: 0 0 10px white;">♿</div>`,
+        iconSize: [40, 40],
+        iconAnchor: [20, 40],
+      }),
+    })
+      .addTo(map)
+      .bindPopup(
+        `<strong>${data.place || "目標地點"}</strong><br>AI 帶您來這裡！`,
+      )
+      .openPopup();
+
+    document.getElementById("end").value = `${lon},${lat}`;
+
+    addMessage(`${data.reply || "已幫您標記在地圖上！"}`, false);
+
+    // 顯示地點相關建議
+    if (data.suggestions && data.suggestions.length > 0) {
+      showChatSuggestions(data.suggestions);
+    }
+  } else {
+    // 一般回應或找不到地點
+    addMessage(data.reply || "我還在學習中...請再說一次～", false);
+
+    if (data.suggestions && data.suggestions.length > 0) {
+      showChatSuggestions(data.suggestions);
+    }
+  }
+}
+
+// 顯示聊天建議按鈕
+function showChatSuggestions(suggestions) {
+  const suggestionsHTML = suggestions
+    .map(
+      (suggestion) =>
+        `<button class="chat-suggestion" onclick="handleSuggestion('${suggestion}')">${suggestion}</button>`,
+    )
+    .join("");
+
+  const suggestionDiv = document.createElement("div");
+  suggestionDiv.className = "chat-suggestions";
+  suggestionDiv.innerHTML = suggestionsHTML;
+
+  chatMessages.appendChild(suggestionDiv);
+  scrollToBottom();
+}
+
+// 處理建議點擊
+function handleSuggestion(suggestion) {
+  document.getElementById("chat-input").value = suggestion;
+  sendMessage();
 }
 
 function addTypingIndicator() {
@@ -561,160 +831,6 @@ function initMapClick() {
       clickCount = 0;
     }
   });
-}
-
-// 在地圖上繪製路線 - 支援新舊兩種格式
-function drawRoutesOnMap(routeData) {
-  console.log("🔄 繪製路線資料:", routeData);
-
-  const layers = []; // 儲存所有圖層用於計算邊界
-
-  // 檢查是新格式還是舊格式
-  const isNewFormat = routeData.normal !== undefined;
-
-  if (isNewFormat) {
-    console.log("📝 檢測到新格式（雙路線）");
-
-    // 繪製一般路線（黃色）
-    if (
-      routeData.normal &&
-      routeData.normal.features &&
-      routeData.normal.features.length > 0
-    ) {
-      normalRouteLayer = L.geoJSON(routeData.normal, {
-        style: {
-          color: "#ffc107", // 黃色
-          weight: 5,
-          opacity: 0.7,
-          dashArray: "5, 5", // 虛線表示一般路線
-        },
-        onEachFeature: function (feature, layer) {
-          const props = feature.properties;
-          if (props.summary) {
-            const popupContent = `
-              <div style="min-width: 200px;">
-                <strong>🚶 一般路線</strong><br>
-                距離: ${props.summary.distance.toFixed(0)} 公尺<br>
-                時間: ${props.summary.duration} 分鐘<br>
-                <small>最短路徑，可能包含障礙</small>
-              </div>
-            `;
-            layer.bindPopup(popupContent);
-          }
-        },
-      }).addTo(map);
-      layers.push(normalRouteLayer);
-      console.log("✅ 一般路線繪製完成");
-    }
-
-    // 繪製無障礙路線（綠色）
-    if (
-      routeData.accessible &&
-      routeData.accessible.features &&
-      routeData.accessible.features.length > 0
-    ) {
-      accessibleRouteLayer = L.geoJSON(routeData.accessible, {
-        style: {
-          color: "#28a745", // 綠色
-          weight: 6,
-          opacity: 0.8,
-        },
-        onEachFeature: function (feature, layer) {
-          const props = feature.properties;
-          if (props.summary && props.accessibility) {
-            const accessibility = props.accessibility;
-            const popupContent = `
-              <div style="min-width: 220px;">
-                <strong>♿ 無障礙路線</strong><br>
-                距離: ${props.summary.distance.toFixed(0)} 公尺<br>
-                時間: ${props.summary.duration} 分鐘<br>
-                障礙點: ${accessibility.barrier_count} 個<br>
-                <small>${
-                  accessibility.suitable_for_wheelchair
-                    ? "適合輪椅"
-                    : "可能有障礙"
-                }</small>
-              </div>
-            `;
-            layer.bindPopup(popupContent);
-          }
-        },
-      }).addTo(map);
-      layers.push(accessibleRouteLayer);
-      console.log("✅ 無障礙路線繪製完成");
-    }
-  } else {
-    // 舊格式處理（單一路線）
-    console.log("📝 檢測到舊格式（單一路線）");
-
-    if (routeData.features && routeData.features.length > 0) {
-      // 繪製單一路線（藍色）
-      normalRouteLayer = L.geoJSON(routeData, {
-        style: {
-          color: "#007aff", // 藍色
-          weight: 6,
-          opacity: 0.8,
-        },
-        onEachFeature: function (feature, layer) {
-          const props = feature.properties;
-          if (props.summary) {
-            const popupContent = `
-              <div style="min-width: 200px;">
-                <strong>規劃路線</strong><br>
-                距離: ${props.summary.distance.toFixed(0)} 公尺<br>
-                時間: ${props.summary.duration} 分鐘<br>
-                <small>單一路線模式</small>
-              </div>
-            `;
-            layer.bindPopup(popupContent);
-          }
-        },
-      }).addTo(map);
-      layers.push(normalRouteLayer);
-      console.log("✅ 單一路線繪製完成");
-    }
-  }
-
-  // 自動縮放到路線範圍
-  if (layers.length > 0) {
-    try {
-      const group = L.featureGroup(layers);
-      const bounds = group.getBounds();
-
-      if (bounds.isValid()) {
-        map.fitBounds(bounds, {
-          padding: [50, 50],
-          maxZoom: 16,
-        });
-        console.log("✅ 地圖縮放到路線範圍");
-      } else {
-        console.warn("⚠️ 無效的邊界，使用預設視圖");
-        const startCoords = document
-          .getElementById("start")
-          .value.split(",")
-          .map(Number);
-        const endCoords = document
-          .getElementById("end")
-          .value.split(",")
-          .map(Number);
-        showNavigationButton(routeData);
-
-        const safeBounds = L.latLngBounds([
-          [startCoords[1], startCoords[0]],
-          [endCoords[1], endCoords[0]],
-        ]);
-
-        if (safeBounds.isValid()) {
-          map.fitBounds(safeBounds, { padding: [50, 50] });
-        }
-      }
-    } catch (error) {
-      console.error("❌ 縮放地圖時發生錯誤:", error);
-      map.setView([23.898068, 121.541587], 14);
-    }
-  } else {
-    console.warn("⚠️ 沒有有效的路線圖層可縮放");
-  }
 }
 
 // 顯示路線資訊 - 支援新舊兩種格式
