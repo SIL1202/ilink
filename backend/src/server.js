@@ -43,31 +43,38 @@ app.get("/api/ramps", (req, res) => {
 
 app.post("/api/route", async (req, res) => {
   try {
-    const { start, end, mode, ramp } = req.body;
-    console.log("收到路線規劃請求:", { start, end, mode, ramp });
-    console.log("後端接收的 ramp 參數:", {
-      type: typeof ramp,
-      isNull: ramp === null,
-      isUndefined: ramp === undefined,
-      value: ramp,
+    const { start, end, mode, ramp, accessible_end, original_end } = req.body;
+    console.log("收到路線規劃請求:", {
+      start,
+      end,
+      mode,
+      ramp,
+      accessible_end,
     });
 
     if (!validLonLatPair(start) || !validLonLatPair(end)) {
       return res.status(400).json({
         error: "bad_coords",
-        hint: "請提供有效的 [經度,緯度] 座標",
+        message: "請提供有效的 [經度,緯度] 座標",
       });
     }
 
-    // 把 mode 和 ramp 都丟進去
-    const result = await calculateRoute(start, end, mode, ramp);
-    console.log("路線規劃成功，回傳雙路線格式");
+    // 使用 options 物件傳遞所有參數
+    const options = {
+      mode: mode || "normal",
+      ramp: ramp,
+      accessible_end: accessible_end,
+      original_end: original_end,
+    };
+
+    const result = await calculateRoute(start, end, options);
+    console.log("路線規劃成功");
     res.json(result);
   } catch (err) {
     console.error("路線規劃錯誤:", err);
     res.status(500).json({
       error: "routing_failed",
-      message: "路線規劃服務暫時無法使用",
+      message: err.message || "路線規劃服務暫時無法使用",
     });
   }
 });

@@ -3,85 +3,75 @@ import { calculateRouteDistance, haversineMeters } from "../utils/geo.js";
 import fs from "fs";
 import path from "path";
 
-export async function calculateRoute(start, end, mode = "normal", ramp = null) {
-  console.log("📍 計算路線...", { start, end, mode, ramp });
-  console.log("🔍 ramp 參數詳細資訊:", {
-    type: typeof ramp,
-    isNull: ramp === null,
-    isUndefined: ramp === undefined,
-    value: ramp,
-  });
+async function getFallbackResponse(start, end) {
+  const fallbackRoute = await getFallbackRoute(start, end);
+  return {
+    normal: fallbackRoute,
+    accessible: null,
+    has_accessible_alternative: false,
+    metadata: {
+      normal_destination: end,
+      accessible_destination: end,
+      note: "使用降級路線方案",
+    },
+  };
+}
 
-  const normalRoute = await getOSRMRoute(start, end);
-  let accessibleRoute = null;
-  let hasAccessibleAlternative = false;
+export async function calculateRoute(start, end, options = {}) {
+  const {
+    mode = "normal",
+    ramp = null,
+    accessible_end = null,
+    original_end = null,
+  } = options;
 
-  if (mode === "accessible") {
-    console.log("♿ 無障礙路線模式");
+  console.log("📍 計算路線...", { start, end, options });
 
-    // 詳細檢查 ramp 參數
-    if (ramp) {
-      console.log("✅ 使用提供的坡道點:", ramp);
-      console.log("🎯 ramp 物件結構:", {
-        hasLon: "lon" in ramp,
-        hasLat: "lat" in ramp,
-        hasName: "name" in ramp,
-        lon: ramp.lon,
-        lat: ramp.lat,
-        name: ramp.name,
-      });
+  try {
+    // 計算一般路線
+    const normalRoute = await getOSRMRoute(start, end);
 
-      // 這裡可以實現真正的無障礙路線規劃邏輯
-      // 暫時先用一般路線代替
-      accessibleRoute = formatSimpleRoute(normalRoute);
-      const feature = accessibleRoute.features[0];
+    let accessibleRoute = null;
+    let hasAccessibleAlternative = false;
 
-      feature.properties.accessibility = {
-        barrier_count: 0,
-        suitable_for_wheelchair: true,
-        ramp_used: ramp.name,
-      };
+    // 判斷是否需要計算無障礙路線
+    const shouldCalculateAccessible =
+      mode === "accessible" || (ramp && accessible_end);
 
-      hasAccessibleAlternative = true;
-      console.log(
-        "🎉 已設定無障礙路線，has_accessible_alternative =",
-        hasAccessibleAlternative,
-      );
-    } else {
-      console.log("❌ 無障礙模式但未提供坡道點");
-      // 檢查目的地附近是否有坡道
-      const hasRamp = await checkDestinationHasRamp(end);
-      if (hasRamp) {
-        console.log("✅ 目的地附近有坡道，提供無障礙路線");
-        accessibleRoute = formatSimpleRoute(normalRoute);
+    if (shouldCalculateAccessible) {
+      console.log("♿ 計算無障礙路線");
+
+      const accessibleTarget = accessible_end || end;
+      accessibleRoute = await getOSRMRoute(start, accessibleTarget);
+
+      if (accessibleRoute && accessibleRoute.routes?.length > 0) {
+        accessibleRoute = formatSimpleRoute(accessibleRoute);
+        // 添加無障礙屬性
         const feature = accessibleRoute.features[0];
-
         feature.properties.accessibility = {
           barrier_count: 0,
           suitable_for_wheelchair: true,
+          ramp_used: ramp?.name || "自動偵測坡道",
+          original_destination: original_end || end,
         };
-
         hasAccessibleAlternative = true;
-      } else {
-        console.log("❌ 目的地附近沒有坡道，無法提供無障礙路線");
-        hasAccessibleAlternative = false;
       }
     }
-  } else {
-    console.log("🚶 一般模式：僅提供一般路線");
-    hasAccessibleAlternative = false;
+
+    return {
+      normal: formatSimpleRoute(normalRoute),
+      accessible: accessibleRoute,
+      has_accessible_alternative: hasAccessibleAlternative,
+      metadata: {
+        normal_destination: end,
+        accessible_destination: accessible_end || end,
+      },
+    };
+  } catch (error) {
+    console.error("路線計算失敗:", error);
+    // 返回降級方案
+    return getFallbackResponse(start, end);
   }
-
-  console.log("📤 最終回傳結果:", {
-    has_accessible_alternative: hasAccessibleAlternative,
-    accessible_route_exists: accessibleRoute !== null,
-  });
-
-  return {
-    normal: formatSimpleRoute(normalRoute),
-    accessible: accessibleRoute,
-    has_accessible_alternative: hasAccessibleAlternative,
-  };
 }
 
 async function checkDestinationHasRamp(destination) {
@@ -205,25 +195,29 @@ async function loadRampsData() {
 }
 
 async function getOSRMRoute(start, end) {
-  const [startLon, startLat] = start;
-  const [endLon, endLat] = end;
-
-  const url =
-    `https://router.project-osrm.org/route/v1/walking/` +
-    `${startLon},${startLat};${endLon},${endLat}?` +
-    `overview=full&geometries=geojson`;
-
   try {
+    const [startLon, startLat] = start;
+    const [endLon, endLat] = end;
+
+    const url = `https://router.project-osrm.org/route/v1/walking/${startLon},${startLat};${endLon},${endLat}?overview=full&geometries=geojson`;
+
     const response = await fetch(url);
     if (!response.ok) {
-      throw new Error(
-        `OSRM API 錯誤: ${response.status} ${response.statusText}`,
-      );
+      throw new Error(`OSRM API 錯誤: ${response.status}`);
     }
-    return await response.json();
+
+    const data = await response.json();
+
+    // 檢查 OSRM 回傳的錯誤
+    if (data.code !== "Ok") {
+      throw new Error(`OSRM 路線規劃失敗: ${data.message || "未知錯誤"}`);
+    }
+
+    return data;
   } catch (error) {
     console.error("❌ OSRM 請求失敗:", error.message);
-    throw error;
+    // 返回降級方案
+    return getFallbackRoute(start, end);
   }
 }
 

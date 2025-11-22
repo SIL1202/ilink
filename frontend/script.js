@@ -46,6 +46,111 @@ async function loadRamps() {
   }
 }
 
+async function drawRoute() {
+  const routeInfo = document.getElementById("routeInfo");
+  const routeDetails = document.getElementById("routeDetails");
+
+  routeInfo.style.display = "block";
+  routeDetails.innerHTML =
+    '<div style="text-align: center;">規劃路線中...</div>';
+
+  let startValue = document.getElementById("start").value;
+  let endValue = document.getElementById("end").value;
+
+  console.log("📍 規劃路線從:", startValue, "到:", endValue);
+
+  try {
+    const [slon, slat] = startValue.split(",").map(Number);
+    let [elon, elat] = endValue.split(",").map(Number);
+
+    if (isNaN(slon) || isNaN(slat) || isNaN(elon) || isNaN(elat)) {
+      throw new Error("無效的座標格式，請使用 經度,緯度 格式");
+    }
+
+    let mode = "normal"; // 預設為一般模式
+    let rampPoint = null;
+    let originalEnd = [elon, elat]; // 保存原始終點
+    let accessibleEnd = [elon, elat]; // 無障礙路線終點
+
+    // 檢查坡道資料是否已載入
+    if (ramps.length === 0) {
+      console.warn("⚠️ 坡道資料尚未載入，重新載入...");
+      await loadRamps();
+    }
+
+    // 自動判斷目的地附近是否有人工坡道
+    const { ramp, distance } = findNearestRamp(elat, elon);
+
+    console.log(`📍 最近坡道距離: ${distance.toFixed(1)} 公尺`);
+
+    // ✅ 修正：只有無障礙路線才重新導向到坡道
+    if (ramp && distance < 100) {
+      console.log("♿ 終點附近有坡道 → 啟動無障礙路線模式");
+
+      // ✅ 重要：只有無障礙路線的終點改為坡道位置
+      accessibleEnd = [ramp.lon, ramp.lat];
+
+      rampPoint = {
+        lon: ramp.lon,
+        lat: ramp.lat,
+        name: ramp.name,
+        original_end: originalEnd, // 保存原始終點用於顯示
+      };
+
+      console.log("➡️ 無障礙入口：", rampPoint);
+      console.log("🎯 無障礙路線終點已重新導向至坡道位置");
+      console.log("🚶 一般路線保持原終點位置");
+    } else {
+      console.log("🚶‍♂️ 終點沒有坡道 → 使用一般導航模式");
+      mode = "normal";
+      rampPoint = null;
+    }
+
+    // ✅ 修正：傳送不同的終點給後端
+    const body = {
+      start: [slon, slat],
+      end: [elon, elat], // 一般路線使用原終點
+      accessible_end: accessibleEnd, // 無障礙路線使用坡道終點
+      mode: mode,
+      ramp: rampPoint,
+      original_end: originalEnd, // 傳送原始終點給後端
+    };
+
+    console.log("📤 傳送到後端:", body);
+
+    const response = await fetch("http://localhost:3000/api/route", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || `HTTP ${response.status}`);
+    }
+
+    const routeData = await response.json();
+    console.log("✅ 後端回傳路線資料:", routeData);
+
+    // 清除舊路線
+    clearRouteLayers();
+
+    // 繪製路線
+    drawRoutesOnMap(routeData);
+
+    // 顯示路線資訊
+    displayRouteInfo(routeData, originalEnd, rampPoint);
+  } catch (e) {
+    console.error("❌ 路線規劃失敗:", e);
+    routeDetails.innerHTML = `
+      <div style="color: #dc3545; text-align: center;">
+        路線規劃失敗<br>
+        <small>${e.message}</small>
+      </div>
+    `;
+  }
+}
+
 function displayRampsOnMap(ramps) {
   // 清除舊的坡道標記
   rampMarkers.forEach((marker) => map.removeLayer(marker));
@@ -68,6 +173,156 @@ function displayRampsOnMap(ramps) {
 
     rampMarkers.push(marker);
   });
+}
+
+// 在地圖上繪製路線 - 支援新舊兩種格式
+function drawRoutesOnMap(routeData) {
+  console.log("🔄 繪製路線資料:", routeData);
+
+  const layers = []; // 儲存所有圖層用於計算邊界
+
+  // 檢查是新格式還是舊格式
+  const isNewFormat = routeData.normal !== undefined;
+
+  if (isNewFormat) {
+    console.log("📝 檢測到新格式（雙路線）");
+
+    // 繪製一般路線（黃色）- 到原終點
+    if (
+      routeData.normal &&
+      routeData.normal.features &&
+      routeData.normal.features.length > 0
+    ) {
+      normalRouteLayer = L.geoJSON(routeData.normal, {
+        style: {
+          color: "#ffc107", // 黃色
+          weight: 5,
+          opacity: 0.7,
+          dashArray: "5, 5", // 虛線表示一般路線
+        },
+        onEachFeature: function (feature, layer) {
+          const props = feature.properties;
+          const destination = routeData.metadata?.normal_destination;
+          const popupContent = `
+            <div style="min-width: 200px;">
+              <strong>🚶 一般路線</strong><br>
+              距離: ${props.summary.distance.toFixed(0)} 公尺<br>
+              時間: ${props.summary.duration} 分鐘<br>
+              <small>最短路徑到原始目的地</small>
+              ${destination ? `<br><small>目的地: [${destination[0].toFixed(6)}, ${destination[1].toFixed(6)}]</small>` : ""}
+            </div>
+          `;
+          layer.bindPopup(popupContent);
+        },
+      }).addTo(map);
+      layers.push(normalRouteLayer);
+      console.log("✅ 一般路線繪製完成（到原終點）");
+    }
+
+    // 繪製無障礙路線（綠色）- 到坡道位置
+    if (
+      routeData.accessible &&
+      routeData.accessible.features &&
+      routeData.accessible.features.length > 0
+    ) {
+      accessibleRouteLayer = L.geoJSON(routeData.accessible, {
+        style: {
+          color: "#28a745", // 綠色
+          weight: 6,
+          opacity: 0.8,
+        },
+        onEachFeature: function (feature, layer) {
+          const props = feature.properties;
+          const accessibility = props.accessibility;
+          const destination = routeData.metadata?.accessible_destination;
+          const popupContent = `
+            <div style="min-width: 220px;">
+              <strong>♿ 無障礙路線</strong><br>
+              距離: ${props.summary.distance.toFixed(0)} 公尺<br>
+              時間: ${props.summary.duration} 分鐘<br>
+              ${accessibility?.ramp_used ? `坡道: ${accessibility.ramp_used}<br>` : ""}
+              <small>${accessibility?.suitable_for_wheelchair ? "✅ 適合輪椅" : "⚠️ 可能有障礙"}</small>
+              ${destination ? `<br><small>無障礙入口: [${destination[0].toFixed(6)}, ${destination[1].toFixed(6)}]</small>` : ""}
+            </div>
+          `;
+          layer.bindPopup(popupContent);
+        },
+      }).addTo(map);
+      layers.push(accessibleRouteLayer);
+      console.log("✅ 無障礙路線繪製完成（到坡道位置）");
+    }
+  } else {
+    // 舊格式處理（單一路線）
+    console.log("📝 檢測到舊格式（單一路線）");
+
+    if (routeData.features && routeData.features.length > 0) {
+      // 繪製單一路線（藍色）
+      normalRouteLayer = L.geoJSON(routeData, {
+        style: {
+          color: "#007aff", // 藍色
+          weight: 6,
+          opacity: 0.8,
+        },
+        onEachFeature: function (feature, layer) {
+          const props = feature.properties;
+          if (props.summary) {
+            const popupContent = `
+              <div style="min-width: 200px;">
+                <strong>規劃路線</strong><br>
+                距離: ${props.summary.distance.toFixed(0)} 公尺<br>
+                時間: ${props.summary.duration} 分鐘<br>
+                <small>單一路線模式</small>
+              </div>
+            `;
+            layer.bindPopup(popupContent);
+          }
+        },
+      }).addTo(map);
+      layers.push(normalRouteLayer);
+      console.log("✅ 單一路線繪製完成");
+    }
+  }
+
+  // 自動縮放到路線範圍
+  if (layers.length > 0) {
+    try {
+      const group = L.featureGroup(layers);
+      const bounds = group.getBounds();
+
+      if (bounds.isValid()) {
+        map.fitBounds(bounds, {
+          padding: [50, 50],
+          maxZoom: 16,
+        });
+        console.log("✅ 地圖縮放到路線範圍");
+      } else {
+        console.warn("⚠️ 無效的邊界，使用預設視圖");
+        const startCoords = document
+          .getElementById("start")
+          .value.split(",")
+          .map(Number);
+        const endCoords = document
+          .getElementById("end")
+          .value.split(",")
+          .map(Number);
+        showNavigationButton(routeData);
+
+        const safeBounds = L.latLngBounds([
+          [startCoords[1], startCoords[0]],
+          [endCoords[1], endCoords[0]],
+        ]);
+
+        if (safeBounds.isValid()) {
+          map.fitBounds(safeBounds, { padding: [50, 50] });
+        }
+      }
+    } catch (error) {
+      console.error("❌ 縮放地圖時發生錯誤:", error);
+      map.setView([23.898068, 121.541587], 14);
+    }
+  } else {
+    console.warn("⚠️ 沒有有效的路線圖層可縮放");
+  }
 }
 
 // ==================== Chat 功能完整實作（終極版）====================
@@ -306,113 +561,6 @@ function initMapClick() {
       clickCount = 0;
     }
   });
-}
-
-async function drawRoute() {
-  const routeInfo = document.getElementById("routeInfo");
-  const routeDetails = document.getElementById("routeDetails");
-
-  routeInfo.style.display = "block";
-  routeDetails.innerHTML =
-    '<div style="text-align: center;">規劃路線中...</div>';
-
-  let startValue = document.getElementById("start").value;
-  let endValue = document.getElementById("end").value;
-
-  console.log("📍 規劃路線從:", startValue, "到:", endValue);
-
-  try {
-    const [slon, slat] = startValue.split(",").map(Number);
-    let [elon, elat] = endValue.split(",").map(Number);
-
-    if (isNaN(slon) || isNaN(slat) || isNaN(elon) || isNaN(elat)) {
-      throw new Error("無效的座標格式，請使用 經度,緯度 格式");
-    }
-
-    let mode = "normal"; // 預設為一般模式
-    let rampPoint = null;
-    let originalEnd = [elon, elat]; // 保存原始終點
-
-    // 檢查坡道資料是否已載入
-    if (ramps.length === 0) {
-      console.warn("⚠️ 坡道資料尚未載入，重新載入...");
-      await loadRamps();
-    }
-
-    // 自動判斷目的地附近是否有人工坡道
-    const { ramp, distance } = findNearestRamp(elat, elon);
-
-    console.log(`📍 最近坡道距離: ${distance.toFixed(1)} 公尺`);
-
-    // ✅ 修正：真正重新導向終點到坡道位置
-    if (ramp && distance < 100) {
-      console.log("♿ 終點附近有坡道 → 啟動無障礙路線模式");
-      mode = "accessible";
-
-      // ✅ 重要：將終點座標改為坡道位置
-      elon = ramp.lon;
-      elat = ramp.lat;
-
-      // 更新輸入框中的終點座標
-      document.getElementById("end").value = `${elon},${elat}`;
-
-      rampPoint = {
-        lon: ramp.lon,
-        lat: ramp.lat,
-        name: ramp.name,
-        original_end: originalEnd, // 保存原始終點用於顯示
-      };
-
-      console.log("➡️ 無障礙入口：", rampPoint);
-      console.log("🎯 終點已重新導向至坡道位置");
-    } else {
-      console.log("🚶‍♂️ 終點沒有坡道 → 使用一般導航模式");
-      mode = "normal";
-      rampPoint = null;
-    }
-
-    // 呼叫後端
-    const body = {
-      start: [slon, slat],
-      end: [elon, elat], // 使用可能被修改的終點座標
-      mode: mode,
-      ramp: rampPoint,
-      original_end: originalEnd, // 傳送原始終點給後端
-    };
-
-    console.log("📤 傳送到後端:", body);
-
-    const response = await fetch("http://localhost:3000/api/route", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.message || `HTTP ${response.status}`);
-    }
-
-    const routeData = await response.json();
-    console.log("✅ 後端回傳路線資料:", routeData);
-
-    // 清除舊路線
-    clearRouteLayers();
-
-    // 繪製路線
-    drawRoutesOnMap(routeData);
-
-    // 顯示路線資訊
-    displayRouteInfo(routeData, originalEnd, rampPoint);
-  } catch (e) {
-    console.error("❌ 路線規劃失敗:", e);
-    routeDetails.innerHTML = `
-      <div style="color: #dc3545; text-align: center;">
-        路線規劃失敗<br>
-        <small>${e.message}</small>
-      </div>
-    `;
-  }
 }
 
 // 在地圖上繪製路線 - 支援新舊兩種格式

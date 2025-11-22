@@ -62,5 +62,136 @@
     "campus": "志學校區",
     "type": "building_ramp",
     "description": "出入口寬度150公分、扶手高度80公分、轉彎平台空間0公分。"
+  },
+  {
+    "name": "理工二館 無障礙坡道",
+    "lat": 23.899375,
+    "lon": 121.543819,
+    "campus": "志學校區",
+    "type": "building_ramp",
+    "description": "出入口寬度150公分、扶手高度80公分、轉彎平台空間0公分。"
+  },
+  {
+    "name": "理工一館 無障礙坡道",
+    "lat": 23.89757,
+    "lon": 121.542853,
+    "campus": "志學校區",
+    "type": "building_ramp",
+    "description": "出入口寬度150公分、扶手高度80公分、轉彎平台空間0公分。"
+  },
+  {
+    "name": "學生活動中心 無障礙坡道",
+    "lat": 23.898688,
+    "lon": 121.541362,
+    "campus": "志學校區",
+    "type": "building_ramp",
+    "description": "出入口寬度150公分、扶手高度80公分、轉彎平台空間0公分。"
+  },
+  {
+    "name": "管理學院 無障礙坡道",
+    "lat": 23.89757,
+    "lon": 121.540632,
+    "campus": "志學校區",
+    "type": "building_ramp",
+    "description": "出入口寬度150公分、扶手高度80公分、轉彎平台空間0公分。"
+  },
+
+  {
+    "name": "花蓮火車站（前站）",
+    "lat": 23.992901,
+    "lon": 121.601229,
+    "type": "transport_ramp",
+    "description": "前站主入口設有無障礙坡道，自動門＋導盲磚。"
+  },
+  {
+    "name": "花蓮火車站（後站）",
+    "lat": 23.992441,
+    "lon": 121.604026,
+    "type": "transport_ramp",
+    "description": "後站新建區域全區平坦，入口坡道完善，電梯可達月台。"
+  },
+  {
+    "name": "花蓮慈濟醫院",
+    "lat": 23.993757,
+    "lon": 121.598197,
+    "type": "hospital_ramp",
+    "description": "主入口大型坡道＋自動門，輪椅通行無障礙。"
+  },
+  {
+    "name": "花蓮市公所",
+    "lat": 23.976061,
+    "lon": 121.604101,
+    "type": "government_ramp",
+    "description": "前門設有緩坡與平坦入口，內部具無障礙廁所。"
+  },
+  {
+    "name": "花蓮縣政府",
+    "lat": 23.982175,
+    "lon": 121.603395,
+    "type": "government_ramp",
+    "description": "主入口坡道，後棟電梯可通達各樓層，無高差入口。"
+  },
+  {
+    "name": "花蓮文創園區（主入口）",
+    "lat": 23.977489,
+    "lon": 121.604007,
+    "type": "public_space_ramp",
+    "description": "園區多入口具坡道，主入口無階差，倉庫棟均為工業平面地基。"
+  },
+  {
+    "name": "城市車旅",
+    "lat": 23.973656,
+    "lon": 121.601733,
+    "type": "public_space_ramp",
+    "description": "入口平坦，內部地板多為平面設計，含無障礙廁所。"
+  },
+  {
+    "name": "東大門夜市（福町）",
+    "lat": 23.969613,
+    "lon": 121.606716,
+    "type": "public_space_ramp",
+    "description": "入口平坦、內部地板多為平面設計，含無障礙廁所。"
+  },
+  {
+    "name": "東大門夜市（大陸街）",
+    "lat": 23.969224,
+    "lon": 121.607351,
+    "type": "public_space_ramp",
+    "description": "主要入口平坦，路面寬敞可輪椅通行。"
+  },
+  {
+    "name": "東大門夜市（原住民一條街）",
+    "lat": 23.968755,
+    "lon": 121.606882,
+    "type": "public_space_ramp",
+    "description": "入口與主要通道皆平坦，設置無障礙廁所。"
+  },
+  {
+    "name": "花蓮市立圖書館",
+    "lat": 23.97689,
+    "lon": 121.607698,
+    "type": "public_building_ramp",
+    "description": "主入口設有坡道與自動門，館內通道寬敞。"
+  },
+  {
+    "name": "花蓮高商",
+    "lat": 23.981681,
+    "lon": 121.597381,
+    "type": "school_ramp",
+    "description": "正門右側坡道，校園內主要棟皆設電梯。"
+  },
+  {
+    "name": "花蓮防災教育館",
+    "lat": 23.981241,
+    "lon": 121.60076,
+    "type": "public_building_ramp",
+    "description": "全館平地入口，坡道＋無障礙廁所。"
+  },
+  {
+    "name": "花蓮港旅遊中心",
+    "lat": 23.980623,
+    "lon": 121.618424,
+    "type": "transport_ramp",
+    "description": "旅客中心入口設坡道，港區通道寬敞、地面平整。"
   }
 ]
