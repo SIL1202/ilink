@@ -7,6 +7,7 @@ import { calculateRoute } from "./routes/route.js";
 import { validLonLatPair } from "./utils/geo.js";
 import chatRouter from "./ai/chat.js";
 import navigationRouter from "./routes/navigation.js";
+import obstacleRouter from "./routes/obstacles.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -16,6 +17,7 @@ const PORT = 3000;
 app.use(cors());
 app.use(express.json({ limit: "1mb" }));
 
+app.use("/api/obstacles", obstacleRouter);
 app.use("/api", chatRouter);
 app.use("/api", navigationRouter);
 

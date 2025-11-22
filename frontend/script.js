@@ -65,11 +65,6 @@ async function drawRoute() {
     const [slon, slat] = startValue.split(",").map(Number);
     let [elon, elat] = endValue.split(",").map(Number);
 
-    const routeData = await resonse.json();
-    console.log("後端回傳路線資料:", routeData);
-
-    window.currentRoute = routeData;
-
     if (isNaN(slon) || isNaN(slat) || isNaN(elon) || isNaN(elat)) {
       throw new Error("無效的座標格式，請使用 經度,緯度 格式");
     }
@@ -135,7 +130,9 @@ async function drawRoute() {
     }
 
     const routeData = await response.json();
-    console.log("✅ 後端回傳路線資料:", routeData);
+    console.log("後端回傳路線資料:", routeData);
+
+    window.currentRoute = routeData;
 
     // 收集分析數據
     await collectRouteAnalytics(routeData, {

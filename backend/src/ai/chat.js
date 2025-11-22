@@ -1,4 +1,5 @@
 import express from "express";
+import { routeContextService } from "../services/route-context-service.js";
 import { naturalLanguageToPlace, askLLM } from "./ai.js";
 import { analyticsService } from "./analytics.js";
 import ramps from "../data/ramps.json" assert { type: "json" };
@@ -74,6 +75,78 @@ router.post("/chat", async (req, res) => {
     });
   }
 });
+
+// 新增障礙物回報處理函式
+async function handleObstacleReport(message, res) {
+  console.log("⚠️ 處理障礙物回報:", message);
+
+  try {
+    // 分析障礙物資訊
+    const obstacleInfo = await analyzeObstacleReport(message);
+
+    // 如果無法取得位置，請使用者提供
+    if (!obstacleInfo.location) {
+      return res.json({
+        type: "obstacle_report",
+        reply: `📍 請點擊地圖標示障礙物的確切位置，或告訴我具體地址。\n\n回報內容：${obstacleInfo.description}`,
+        needsLocation: true,
+        obstacleInfo: obstacleInfo,
+        suggestions: ["點擊地圖標示位置", "提供地址", "取消回報"],
+      });
+    }
+
+    // 記錄障礙物
+    const result = await obstacleService.reportObstacle(obstacleInfo);
+
+    return res.json({
+      type: "obstacle_report",
+      reply: result.message,
+      obstacle: result.obstacle,
+      suggestions: ["查看附近障礙物", "規劃替代路線", "回報另一個障礙物"],
+    });
+  } catch (error) {
+    console.error("障礙物回報處理失敗:", error);
+    return res.json({
+      type: "obstacle_report",
+      reply: "抱歉，處理障礙物回報時出現問題。請稍後再試或提供更詳細的資訊。",
+      suggestions: ["重新回報", "聯絡客服", "使用說明"],
+    });
+  }
+}
+
+// 分析障礙物回報
+async function analyzeObstacleReport(message) {
+  const prompt = `
+從使用者訊息中提取障礙物資訊：
+
+使用者輸入：「${message}」
+
+請回傳 JSON：
+{
+  "type": "construction|road_closure|stepped_path|narrow_passage|surface_issue|elevator_outage|ramp_blocked|other",
+  "severity": "low|medium|high|critical",
+  "description": "清理後的描述文字",
+  "location": {"lat": number, "lng": number} 或 null,
+  "userLocation": {"lat": number, "lng": number} 或 null
+}
+
+如果訊息中包含位置資訊，請盡量提取。
+  `;
+
+  try {
+    const analysis = await askLLM(prompt);
+    return JSON.parse(analysis);
+  } catch (error) {
+    console.error("障礙物分析失敗:", error);
+    return {
+      type: "other",
+      severity: "medium",
+      description: message,
+      location: null,
+      userLocation: null,
+    };
+  }
+}
 
 // 處理天氣查詢
 async function handleWeatherQuery(message, res, userContext) {
