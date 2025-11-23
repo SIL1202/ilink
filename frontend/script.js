@@ -48,6 +48,26 @@ async function loadRamps() {
   }
 }
 
+let audioUnlocked = false;
+
+function unlockSpeech() {
+  if (audioUnlocked) return;
+
+  const u = new SpeechSynthesisUtterance("語音啟動");
+  u.volume = 0; // 靜音，不會被聽到
+  window.speechSynthesis.speak(u);
+
+  audioUnlocked = true;
+}
+
+document.body.addEventListener(
+  "click",
+  () => {
+    unlockSpeech();
+  },
+  { once: true },
+);
+
 async function drawRoute() {
   const routeInfo = document.getElementById("routeInfo");
   const routeDetails = document.getElementById("routeDetails");
@@ -1403,16 +1423,27 @@ function updateUserPosition(lat, lng, accuracy) {
   }
 }
 
-// ✅ 呼叫後端檢查位置
 async function checkPositionWithBackend(lat, lng) {
   try {
+    // 檢查必要的資料是否存在
+    if (!navigationData || !navigationData.navigation_id) {
+      console.warn("⚠️ 導航資料不完整，跳過位置檢查");
+      return;
+    }
+
+    // 確保座標是有效的數字
+    if (isNaN(lat) || isNaN(lng)) {
+      console.error("❌ 無效的GPS座標:", lat, lng);
+      return;
+    }
+
     const response = await fetch(
       "http://localhost:3000/api/navigation/position",
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          current_position: [lng, lat],
+          current_position: [lng, lat], // 注意：經度在前，緯度在後
           current_step: currentStep,
           navigation_id: navigationData.navigation_id,
         }),
@@ -1421,9 +1452,10 @@ async function checkPositionWithBackend(lat, lng) {
 
     if (response.ok) {
       const positionData = await response.json();
-
       // 處理後端回傳的導航更新
       handleNavigationUpdate(positionData);
+    } else {
+      console.warn("⚠️ 位置檢查 API 回應異常");
     }
   } catch (error) {
     console.error("位置檢查失敗:", error);
@@ -1432,6 +1464,8 @@ async function checkPositionWithBackend(lat, lng) {
 
 // 處理後端回傳的導航更新
 function handleNavigationUpdate(positionData) {
+  console.log("📍 導航更新:", positionData);
+
   if (positionData.step_completed) {
     // 步驟完成，自動下一步
     if (currentStep < navigationData.steps.length - 1) {
@@ -1444,82 +1478,110 @@ function handleNavigationUpdate(positionData) {
 
   if (positionData.off_route) {
     // 偏離路線，重新規劃
+    console.log("🚫 檢測到偏離路線");
     handleOffRoute(positionData);
   }
 
   if (positionData.next_instruction) {
     // 更新下一個指令
-    document.getElementById("nextInstruction").textContent =
-      positionData.next_instruction;
+    const nextInstruction = document.getElementById("nextInstruction");
+    if (nextInstruction) {
+      nextInstruction.textContent = positionData.next_instruction;
+    }
   }
 }
 
-// 語音提示
-function speakNavigation(instruction) {
-  if ("speechSynthesis" in window) {
-    // 停止之前的語音
-    speechSynthesis.cancel();
-
-    const utterance = new SpeechSynthesisUtterance(instruction);
-    utterance.lang = "zh-TW";
-    utterance.rate = 0.9; // 稍微放慢速度
-    utterance.volume = 0.8;
-    utterance.pitch = 1;
-
-    utterance.onerror = function (event) {
-      console.error("語音合成錯誤:", event);
-    };
-
-    speechSynthesis.speak(utterance);
-  }
-}
-
-// 處理偏離路線
+// 處理偏// 處理偏離路線
 function handleOffRoute(positionData) {
+  console.log("🔄 處理偏離路線", positionData);
+
+  // 語音提示
   speakNavigation("您已偏離路線，正在重新規劃");
 
   // 顯示重新規劃提示
   const nextInstruction = document.getElementById("nextInstruction");
-  nextInstruction.textContent = "偏離路線，重新規劃中...";
-  nextInstruction.style.color = "#dc3545";
+  if (nextInstruction) {
+    nextInstruction.textContent = "偏離路線，重新規劃中...";
+    nextInstruction.style.color = "#dc3545";
+  }
 
-  // 可以選擇自動重新規劃或等待使用者確認
+  // 檢查是否有有效的當前位置
+  if (
+    !positionData.current_position ||
+    !Array.isArray(positionData.current_position)
+  ) {
+    console.error("❌ 偏離路線但沒有有效的位置數據");
+    speakNavigation("無法取得位置，請檢查GPS訊號");
+    return;
+  }
+
+  // 自動重新規劃路線（3秒後）
   setTimeout(() => {
     recalculateRoute(positionData.current_position);
   }, 3000);
 }
 
-// 重新規劃路線
+function speakNavigation(instruction) {
+  // 防止沒有內容
+  if (!instruction || typeof instruction !== "string") return;
+
+  // 必須在使用者互動後才開始播放語音
+  // 用這個旗標紀錄「是否已經有互動」
+  if (!audioUnlocked) {
+    console.warn("語音被阻擋：尚未有使用者互動");
+    return;
+  }
+
+  try {
+    // 停掉任何還在講的語音
+    window.speechSynthesis.cancel();
+
+    const utter = new SpeechSynthesisUtterance(instruction);
+    utter.lang = "zh-TW";
+    utter.rate = 0.9;
+
+    utter.onerror = (err) => {
+      console.error("語音播放錯誤:", err.error);
+    };
+
+    window.speechSynthesis.speak(utter);
+  } catch (err) {
+    console.error("語音異常:", err);
+  }
+}
+
+// 重新規劃路// 重新規劃路線
 async function recalculateRoute(currentPosition) {
   try {
+    console.log("🔄 重新規劃路線", currentPosition);
+
+    // 檢查 currentPosition 是否有效
+    if (
+      !currentPosition ||
+      !Array.isArray(currentPosition) ||
+      currentPosition.length !== 2
+    ) {
+      console.error("❌ 無效的當前位置:", currentPosition);
+      speakNavigation("無法取得當前位置，請手動重新規劃路線");
+      return;
+    }
+
     const endValue = document.getElementById("end").value;
     const [elon, elat] = endValue.split(",").map(Number);
 
-    const response = await fetch(
-      "http://localhost:3000/api/navigation/recalculate",
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          current_position: currentPosition,
-          end: [elon, elat],
-          route_type: currentRouteType,
-        }),
-      },
-    );
+    // 使用正確的座標格式設定起點
+    const [currentLng, currentLat] = currentPosition;
+    document.getElementById("start").value = `${currentLng},${currentLat}`;
 
-    if (response.ok) {
-      const newRouteData = await response.json();
+    console.log("📍 重新規劃從:", [currentLng, currentLat], "到:", [
+      elon,
+      elat,
+    ]);
 
-      // 更新路線顯示
-      clearRouteLayers();
-      drawRoutesOnMap(newRouteData.route_geometry);
+    // 重新規劃路線
+    await drawRoute();
 
-      // 重新開始導航
-      startNavigation(newRouteData);
-
-      speakNavigation("路線重新規劃完成");
-    }
+    speakNavigation("路線重新規劃完成");
   } catch (error) {
     console.error("重新規劃失敗:", error);
     speakNavigation("重新規劃失敗，請手動操作");

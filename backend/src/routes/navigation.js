@@ -140,15 +140,40 @@ router.post("/navigation/position", async (req, res) => {
   }
 });
 
-// 重新規劃路線
+// 重新規劃路// 重新規劃路線
 router.post("/navigation/recalculate", async (req, res) => {
   try {
     const { current_position, end, route_type } = req.body;
 
-    console.log("🔄 重新規劃路線:", { current_position, end, route_type });
+    console.log("🔄 重新規劃路線請求:", {
+      current_position,
+      end,
+      route_type,
+    });
+
+    // 驗證參數
+    if (
+      !current_position ||
+      !Array.isArray(current_position) ||
+      current_position.length !== 2
+    ) {
+      return res.status(400).json({
+        error: "invalid_position",
+        message: "無效的當前位置格式",
+      });
+    }
+
+    if (!end || !Array.isArray(end) || end.length !== 2) {
+      return res.status(400).json({
+        error: "invalid_destination",
+        message: "無效的目的地格式",
+      });
+    }
 
     // 使用現有的路線規劃邏輯
-    const newRoute = await calculateRoute(current_position, end, route_type);
+    const newRoute = await calculateRoute(current_position, end, {
+      mode: route_type || "normal",
+    });
 
     // 生成新的導航步驟
     const newSteps = await generateNavigationSteps(
@@ -168,7 +193,7 @@ router.post("/navigation/recalculate", async (req, res) => {
     console.error("❌ 重新規劃失敗:", error);
     res.status(500).json({
       error: "recalculation_failed",
-      message: "路線重新規劃失敗",
+      message: error.message || "路線重新規劃失敗",
     });
   }
 });
